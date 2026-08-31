@@ -143,7 +143,10 @@ function fromOpenSky(state) {
   if (hex) {
     for (const [name, url] of [
       ['adsb.lol hex', 'https://api.adsb.lol/v2/hex/' + hex],
-      ['adsb.fi hex', 'https://opendata.adsb.fi/api/v2/hex/' + hex]
+      ['adsb.fi hex', 'https://opendata.adsb.fi/api/v2/hex/' + hex],
+      ['adsb.one hex', 'https://api.adsb.one/v2/hex/' + hex],
+      ['airplanes.live hex', 'https://api.airplanes.live/v2/hex/' + hex],
+      ['theairtraffic hex', 'https://api.theairtraffic.com/aircraft/' + hex]
     ]) {
       const label = name + ' ' + hex;
       try {
