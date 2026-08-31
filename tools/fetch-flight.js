@@ -332,18 +332,6 @@ function fromFr24(data, flightId) {
     }
   }
 
-  const payload = {
-    updatedAt: new Date().toISOString(),
-    nearbyEmirates: nearby,
-    flight: CONFIG.flightIata,
-    callsign: CONFIG.callsign,
-    ok: Boolean(aircraft),
-    aircraft,
-    attempts
-  };
-  fs.mkdirSync(path.dirname(OUT), { recursive: true });
-  fs.writeFileSync(OUT, JSON.stringify(payload, null, 2) + '\n');
-
   /* Steig-/Sinkrate aus der Spur ableiten, wenn die Quelle keine liefert.
      Zwei Punkte mit ausreichendem zeitlichem Abstand ergeben den
      wahrscheinlichsten Wert. */
@@ -360,6 +348,18 @@ function fromFr24(data, flightId) {
       break;
     }
   }
+
+  const payload = {
+    updatedAt: new Date().toISOString(),
+    nearbyEmirates: nearby,
+    flight: CONFIG.flightIata,
+    callsign: CONFIG.callsign,
+    ok: Boolean(aircraft),
+    aircraft,
+    attempts
+  };
+  fs.mkdirSync(path.dirname(OUT), { recursive: true });
+  fs.writeFileSync(OUT, JSON.stringify(payload, null, 2) + '\n');
 
   // FR24 liefert die komplette Spur - die ist genauer als alles Nachgehaltene
   if (fr24Trail && fr24Trail.length > 5) {
