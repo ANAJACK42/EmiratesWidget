@@ -659,10 +659,40 @@
     });
   }
 
+  /* Von GitHub Actions serverseitig geholte Daten, ausgeliefert von derselben
+     Adresse wie die Seite: keine CORS-Grenzen, keine Drosselung, funktioniert
+     auch in Netzen, die die ADS-B-Dienste blockieren. */
+  async function fetchRelay(attempts) {
+    try {
+      var json = await fetchJson('data/flight.json?t=' + Date.now(), 8000);
+      var ageMin = json && json.updatedAt ? (Date.now() - new Date(json.updatedAt).getTime()) / 60000 : 999;
+      if (json && json.ok && json.aircraft && ageMin < 20) {
+        attempts.push({ label: 'Repo-Daten (GitHub Actions)', status: 'OK, ' + Math.round(ageMin) + ' min alt' });
+        var ac = json.aircraft;
+        ac.source = (ac.source || 'relay') + ' via Actions';
+        ac.observedAt = new Date(json.updatedAt).getTime();
+        return ac;
+      }
+      attempts.push({
+        label: 'Repo-Daten (GitHub Actions)',
+        status: json && json.ok ? 'zu alt (' + Math.round(ageMin) + ' min)' : 'kein Treffer im letzten Lauf'
+      });
+      if (json && json.nearbyEmirates) state.nearby = json.nearbyEmirates;
+    } catch (err) {
+      attempts.push({ label: 'Repo-Daten (GitHub Actions)', status: 'nicht verfügbar (nur auf der Webseite)' });
+    }
+    return null;
+  }
+
   async function fetchDirect() {
     var attempts = [];
     var aircraft;
     var SOURCES = sourcesFor(activeCallsign());
+
+    // 0. Zuerst die serverseitig geholten Daten
+    setStatus('loading', 'ABFRAGE · SERVERDATEN…');
+    aircraft = await fetchRelay(attempts);
+    if (aircraft) return { ok: true, aircraft: aircraft, attempts: attempts, checkedAt: Date.now() };
 
     // 1. Alle Quellen direkt, gleichzeitig
     setStatus('loading', 'ABFRAGE · ' + SOURCES.length + ' QUELLEN DIREKT…');
