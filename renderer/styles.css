@@ -341,6 +341,14 @@ html, body {
 [data-theme="glass"] .apt-dot { color: rgba(255, 255, 255, 0.95); }
 [data-theme="glass"] .warn { color: #ff9aa2 !important; }
 
+/* Browserbetrieb (GitHub Pages): fuellt das ganze Fenster */
+.shell.web { height: 100vh; height: 100dvh; border-radius: 0; }
+[data-theme="glass"] .shell.web, [data-theme="glass"] .shell.web::before { border-radius: 0; }
+@media (max-width: 700px) {
+  .shell.web .titlebar { padding-top: max(8px, env(safe-area-inset-top)); }
+  .shell.web .footer { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+}
+
 /* Reduzierte Bewegung respektieren */
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }

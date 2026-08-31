@@ -336,7 +336,7 @@
         };
       } catch (err) { /* naechste Quelle versuchen */ }
     }
-    return { ok: false, aircraft: null, checkedAt: Date.now() };
+    return { ok: false, aircraft: null, checkedAt: Date.now(), error: 'feeds' };
   }
 
   function handleResult(result) {
@@ -357,6 +357,9 @@
     if (estimate) {
       state.aircraft = estimate;
       render(estimate, { estimated: true });
+    } else if (result && result.error === 'feeds') {
+      setStatus('lost', 'FEEDS NICHT ERREICHBAR · NAECHSTER VERSUCH LAEUFT');
+      el.statusSource.textContent = 'SRC —';
     } else {
       setStatus('lost', 'KEIN ADS-B KONTAKT · KEINE VORHERIGE POSITION');
       el.statusSource.textContent = 'SRC —';
@@ -431,6 +434,12 @@
     }
     setTheme(savedTheme || 'ecam');
     el.btnPin.classList.toggle('active', state.pinned);
+
+    if (!api) {
+      // Browserbetrieb: Fenstersteuerung gibt es nur in der Desktop-App
+      el.shell.classList.add('web');
+      [el.btnPin, el.btnMin, el.btnClose].forEach(function (btn) { btn.style.display = 'none'; });
+    }
 
     loadTrack();
     initMap();

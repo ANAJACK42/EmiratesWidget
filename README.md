@@ -25,6 +25,27 @@ npm start
 Alternativ per Doppelklick: `start.sh` (macOS/Linux) bzw. `start.cmd` (Windows).
 Beim ersten Start werden die Abhängigkeiten (Electron, Leaflet) automatisch geladen.
 
+## Im Browser statt als Desktop-App (GitHub Pages)
+
+Die Datei `index.html` im Wurzelverzeichnis ist dieselbe Anzeige als reine Web-Seite —
+ohne Node, ohne Electron, auch auf dem iPhone nutzbar. Leaflet kommt dabei vom CDN
+(mit Subresource-Integrity-Prüfsummen), die Flugdaten holt der Browser direkt bei den
+ADS-B-Feeds.
+
+Veröffentlichen: Repository auf GitHub → **Settings** → **Pages** → Source
+*Deploy from a branch* → Branch `claude/ek050-flight-tracker-widget-ourg9m`, Ordner `/ (root)`
+→ **Save**. Nach ein bis zwei Minuten liegt die Seite unter
+`https://anajack42.github.io/EmiratesWidget/`.
+
+GitHub Pages benötigt für private Repositories einen bezahlten Plan; bei einem
+kostenlosen Konto muss das Repository dafür öffentlich sein (es enthält keine
+Zugangsdaten). Lokal testen geht auch ohne Pages: `npx http-server -p 8123` im
+Projektordner, dann `http://127.0.0.1:8123/` öffnen.
+
+Im Browserbetrieb entfallen die Fensterknöpfe (Minimieren, Schließen, Vordergrund) —
+die gibt es nur in der Desktop-App. Design-Umschalter, Aktualisierung alle 5 Minuten und
+alle Anzeigen sind identisch.
+
 ## Bedienung
 
 | Aktion | Wie |
