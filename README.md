@@ -25,6 +25,13 @@ npm start
 Alternativ per Doppelklick: `start.sh` (macOS/Linux) bzw. `start.cmd` (Windows).
 Beim ersten Start werden die Abhängigkeiten (Electron, Leaflet) automatisch geladen.
 
+## Einzeldatei ohne alles
+
+`EK050-Widget.html` enthält Anzeige, Logik und beide Designs in einer Datei.
+Herunterladen, doppelklicken, fertig — der Browser holt die Flugdaten direkt.
+Nur Leaflet kommt vom CDN, es wird also eine Internetverbindung gebraucht.
+Neu erzeugen nach Codeänderungen: `npm run build:single`.
+
 ## Im Browser statt als Desktop-App (GitHub Pages)
 
 Die Datei `index.html` im Wurzelverzeichnis ist dieselbe Anzeige als reine Web-Seite —
