@@ -1,1 +1,81 @@
-{"updatedAt":null,"ok":false,"aircraft":null,"attempts":[]}
+{
+  "updatedAt": "2026-08-31T17:54:52.281Z",
+  "flight": "EK050",
+  "callsign": "UAE5T",
+  "ok": false,
+  "aircraft": null,
+  "attempts": [
+    {
+      "label": "adsb.lol UAE5T",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.fi UAE5T",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "airplanes.live UAE5T",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "adsb.lol UAE50",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.fi UAE50",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "airplanes.live UAE50",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "adsb.lol UAE050",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.fi UAE050",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "airplanes.live UAE050",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "adsb.lol UAE0050",
+      "status": "HTTP 429"
+    },
+    {
+      "label": "adsb.fi UAE0050",
+      "status": "HTTP 429"
+    },
+    {
+      "label": "airplanes.live UAE0050",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "adsb.lol EK50",
+      "status": "HTTP 429"
+    },
+    {
+      "label": "adsb.fi EK50",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "airplanes.live EK50",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "adsb.lol EK050",
+      "status": "HTTP 429"
+    },
+    {
+      "label": "adsb.fi EK050",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "airplanes.live EK050",
+      "status": "HTTP 403"
+    }
+  ]
+}
