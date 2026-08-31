@@ -1247,6 +1247,9 @@ html, body {
   else root.EK_CONFIG = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   return {
+    // Bauversion – steht im DIAG-Fenster, damit erkennbar ist, welcher Stand läuft
+    version: '2026-08-31.8',
+
     /*
      * Flugnummer (IATA) und Funkrufzeichen (ICAO).
      *
@@ -1980,7 +1983,7 @@ html, body {
       CONFIG.flightIata + ' · ' + (ac.registration || 'A6-???') + ' · ' +
       CONFIG.origin.iata + '/' + CONFIG.origin.icao + ' → ' + CONFIG.destination.iata + '/' + CONFIG.destination.icao +
       ' · ' + Math.round(totalNm) + ' NM GESAMT';
-    el.footerRight.textContent = 'UPD ' + utcTime(now) + ' · ' + timeIn(CONFIG.origin.tz, now) + ' MUC · ' + timeIn(CONFIG.destination.tz, now) + ' DXB';
+    el.footerRight.textContent = 'v' + (CONFIG.version || '?') + ' · UPD ' + utcTime(now) + ' · ' + timeIn(CONFIG.origin.tz, now) + ' MUC · ' + timeIn(CONFIG.destination.tz, now) + ' DXB';
 
     drawFlight(ac);
   }
@@ -2077,7 +2080,7 @@ html, body {
 
   async function tryUrl(url, label, attempts) {
     try {
-      var json = await fetchJson(url, 12000);
+      var json = await fetchJson(url, 8000);
       var aircraft = mapAircraft(json, label);
       if (aircraft) { attempts.push({ label: label, status: 'OK' }); return aircraft; }
       attempts.push({ label: label, status: 'antwortet, kein Treffer' });
@@ -2095,44 +2098,65 @@ html, body {
   async function scanCorridor() {
     var probes = [[46.2, 14.5], [36.4, 23.6], [30.0, 31.2], [24.6, 34.6], [24.7, 46.7], [25.3, 53.0]];
     var found = {};
-    for (var i = 0; i < probes.length; i += 1) {
-      var url = 'https://api.adsb.lol/v2/point/' + probes[i][0] + '/' + probes[i][1] + '/250';
-      try {
-        var json = await fetchJson(url, 9000);
-        ((json && json.ac) || []).forEach(function (a) {
-          var cs = String(a.flight || '').trim().toUpperCase();
-          if (cs.indexOf('UAE') !== 0) return;
-          // Nur Maschinen, die grob Richtung Osten/Dubai unterwegs sind
-          found[cs] = {
-            callsign: cs, registration: a.r || '', type: a.t || '',
-            lat: Number(a.lat), lon: Number(a.lon), track: Number(a.track),
-            altitude: a.alt_baro
-          };
-        });
-      } catch (err) { /* nächster Punkt */ }
-    }
+    setStatus('loading', 'SUCHE EMIRATES-FLUEGE AUF DER STRECKE…');
+    await Promise.all(probes.map(function (probe) {
+      return fetchJson('https://api.adsb.lol/v2/point/' + probe[0] + '/' + probe[1] + '/250', 8000)
+        .then(function (json) {
+          ((json && json.ac) || []).forEach(function (a) {
+            var cs = String(a.flight || '').trim().toUpperCase();
+            if (cs.indexOf('UAE') !== 0) return;
+            found[cs] = {
+              callsign: cs, registration: a.r || '', type: a.t || '',
+              lat: Number(a.lat), lon: Number(a.lon), track: Number(a.track), altitude: a.alt_baro
+            };
+          });
+        })
+        .catch(function () { /* dieser Punkt liefert nichts */ });
+    }));
     return Object.keys(found).map(function (k) { return found[k]; });
+  }
+
+  /* Alle Anfragen einer Stufe laufen gleichzeitig; die erste brauchbare
+     Antwort gewinnt. Nacheinander waere es im schlechtesten Fall minutenlang. */
+  function firstSuccess(tasks) {
+    return new Promise(function (resolve) {
+      var pending = tasks.length;
+      var settled = false;
+      if (!pending) { resolve(null); return; }
+      tasks.forEach(function (task) {
+        task().then(function (result) {
+          if (result && !settled) { settled = true; resolve(result); }
+        }, function () { /* Fehler stehen schon im Protokoll */ })
+          .then(function () {
+            pending -= 1;
+            if (pending === 0 && !settled) { settled = true; resolve(null); }
+          });
+      });
+    });
   }
 
   async function fetchDirect() {
     var attempts = [];
-    var i, j, aircraft;
-
+    var aircraft;
     var SOURCES = sourcesFor(activeCallsign());
 
-    // 1. Direkt
-    for (i = 0; i < SOURCES.length; i += 1) {
-      aircraft = await tryUrl(SOURCES[i].url, SOURCES[i].name, attempts);
-      if (aircraft) return { ok: true, aircraft: aircraft, attempts: attempts, checkedAt: Date.now() };
-    }
+    // 1. Alle Quellen direkt, gleichzeitig
+    setStatus('loading', 'ABFRAGE · ' + SOURCES.length + ' QUELLEN DIREKT…');
+    aircraft = await firstSuccess(SOURCES.map(function (s) {
+      return function () { return tryUrl(s.url, s.name, attempts); };
+    }));
+    if (aircraft) return { ok: true, aircraft: aircraft, attempts: attempts, checkedAt: Date.now() };
 
-    // 2. Über CORS-Weiterleitungen
-    for (j = 0; j < PROXIES.length; j += 1) {
-      for (i = 0; i < SOURCES.length; i += 1) {
-        aircraft = await tryUrl(PROXIES[j].wrap(SOURCES[i].url), PROXIES[j].name + '→' + SOURCES[i].name, attempts);
-        if (aircraft) return { ok: true, aircraft: aircraft, attempts: attempts, checkedAt: Date.now() };
-      }
-    }
+    // 2. Dieselben Quellen über CORS-Weiterleitungen, ebenfalls gleichzeitig
+    setStatus('loading', 'ABFRAGE · UEBER WEITERLEITUNGEN…');
+    var relayTasks = [];
+    PROXIES.forEach(function (proxy) {
+      SOURCES.slice(0, 3).forEach(function (s) {
+        relayTasks.push(function () { return tryUrl(proxy.wrap(s.url), proxy.name + '→' + s.name, attempts); });
+      });
+    });
+    aircraft = await firstSuccess(relayTasks);
+    if (aircraft) return { ok: true, aircraft: aircraft, attempts: attempts, checkedAt: Date.now() };
 
     var answered = attempts.some(function (att) { return att.status === 'antwortet, kein Treffer'; });
     var nearby = [];
@@ -2148,7 +2172,8 @@ html, body {
 
   function renderDiag() {
     var lines = [];
-    lines.push('FLUG    ' + CONFIG.flightIata + '  RUFZEICHEN ' + CONFIG.callsign);
+    lines.push('FLUG    ' + CONFIG.flightIata + '  RUFZEICHEN ' + activeCallsign());
+    lines.push('STAND   ' + (CONFIG.version || '—'));
     lines.push('ABFRAGE ' + (state.lastCheck ? new Date(state.lastCheck).toLocaleTimeString('de-DE') : '—'));
     lines.push('MODUS   ' + (api ? 'Desktop-App (ohne CORS-Grenzen)' : 'Browser'));
     lines.push('ROUTE   ' + route.source + ' · ' + Math.round(route.totalNm) + ' NM · '

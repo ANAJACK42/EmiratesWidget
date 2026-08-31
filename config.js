@@ -7,6 +7,9 @@
   else root.EK_CONFIG = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   return {
+    // Bauversion – steht im DIAG-Fenster, damit erkennbar ist, welcher Stand läuft
+    version: '2026-08-31.8',
+
     /*
      * Flugnummer (IATA) und Funkrufzeichen (ICAO).
      *
