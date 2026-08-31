@@ -127,7 +127,21 @@
   }
 
   /* Entfernungen entlang der Route statt Luftlinie */
-  function routeProgress(pos) {
+  function routeProgress(pos, predicted) {
+    // Liegt eine gemessene Spur vor, ist die zurückgelegte Strecke bekannt und
+    // die verbleibende ergibt sich aus dem vorausberechneten Weg.
+    if (predicted && predicted.lengthNm && state.trackLengthNm) {
+      var flownNm = state.trackLengthNm + GEO.distanceNm(state.trackEnd || pos, pos);
+      var total = flownNm + predicted.lengthNm;
+      return {
+        flownNm: flownNm, remainingNm: predicted.lengthNm, totalNm: total,
+        offRouteNm: 0, index: 0
+      };
+    }
+    return routeProgressAlongRoute(pos);
+  }
+
+  function routeProgressAlongRoute(pos) {
     if (!route.points.length) {
       var direct = GEO.distanceNm(CONFIG.origin, CONFIG.destination);
       return {
@@ -156,6 +170,38 @@
       offRouteNm: near.offRouteNm,
       index: near.index
     };
+  }
+
+  /* Vorausberechneter Weg zum Ziel.
+     Ein Flugzeug springt nicht auf den Direktkurs, es dreht mit begrenzter
+     Rate ein. Der Weg beginnt deshalb tangential zur aktuellen Flugrichtung
+     und schwenkt über einige hundert Meilen zum Ziel – das ergibt den Bogen,
+     der auch tatsächlich geflogen wird. */
+  var PREDICT_STEP_NM = 25;
+  var PREDICT_TURN_PER_STEP = 3.2; // Grad je Teilstück
+
+  function predictedPath(ac) {
+    if (!ac || !isNum(ac.lat) || !isNum(ac.lon)) return [];
+    var pos = { lat: ac.lat, lon: ac.lon };
+    var heading = isNum(ac.trackDeg) ? ac.trackDeg : GEO.bearingDeg(pos, CONFIG.destination);
+    var points = [pos];
+    var lengthNm = 0;
+    for (var i = 0; i < 300; i += 1) {
+      var toDest = GEO.distanceNm(pos, CONFIG.destination);
+      if (toDest <= PREDICT_STEP_NM) {
+        points.push({ lat: CONFIG.destination.lat, lon: CONFIG.destination.lon });
+        lengthNm += toDest;
+        break;
+      }
+      var bearing = GEO.bearingDeg(pos, CONFIG.destination);
+      var diff = ((bearing - heading + 540) % 360) - 180;
+      heading = (heading + Math.max(-PREDICT_TURN_PER_STEP, Math.min(PREDICT_TURN_PER_STEP, diff)) + 360) % 360;
+      pos = GEO.destination(pos, heading, PREDICT_STEP_NM);
+      points.push(pos);
+      lengthNm += PREDICT_STEP_NM;
+    }
+    points.lengthNm = lengthNm;
+    return points;
   }
 
   /* ---------- Karte ---------- */
@@ -262,13 +308,11 @@
     layers.flown = L.polyline([], { color: COLORS.ecam.flown, weight: 2.5, opacity: 1 }).addTo(map);
     layers.origin = airportMarker(CONFIG.origin, CONFIG.origin.iata, 'origin').addTo(map);
     layers.destination = airportMarker(CONFIG.destination, CONFIG.destination.iata, 'dest').addTo(map);
-    // Entfernungsringe (halbe und volle Reichweite) um das Flugzeug
+    // Äußerer Entfernungsring als Maßstab, dazu die Puls-Ebene
     layers.rangeOuter = L.circle([CONFIG.origin.lat, CONFIG.origin.lon], {
       radius: 0, fill: false, color: COLORS.ecam.ring, weight: 1, dashArray: '5 7', interactive: false
     }).addTo(map);
-    layers.rangeInner = L.circle([CONFIG.origin.lat, CONFIG.origin.lon], {
-      radius: 0, fill: false, color: COLORS.ecam.ring, weight: 1, dashArray: '5 7', interactive: false
-    }).addTo(map);
+    layers.pulses = L.layerGroup().addTo(map);
 
     layers.aircraft = L.marker([CONFIG.origin.lat, CONFIG.origin.lon], {
       icon: aircraftIcon(0), interactive: false, keyboard: false, zIndexOffset: 1000,
@@ -293,7 +337,6 @@
     if (layers.land) layers.land.setStyle({ fillColor: c.land, color: c.coast });
     if (layers.borders) layers.borders.setStyle({ color: c.border });
     if (layers.rangeOuter) layers.rangeOuter.setStyle({ color: c.ring });
-    if (layers.rangeInner) layers.rangeInner.setStyle({ color: c.ring });
     layers.plan.setStyle({ color: c.plan });
     layers.flown.setStyle({ color: c.flown });
     layers.remaining.setStyle({ color: c.remaining });
@@ -377,7 +420,8 @@
     }
     var metersPerNm = 1852;
     layers.rangeOuter.setLatLng([ac.lat, ac.lon]).setRadius(range * metersPerNm);
-    layers.rangeInner.setLatLng([ac.lat, ac.lon]).setRadius((range / 2) * metersPerNm);
+    state.pulseRadiusM = (range / 2) * metersPerNm; // Puls verlischt am inneren Ring
+    state.pulseCenter = [ac.lat, ac.lon];
     el.ovlRange.textContent = range + ' NM';
   }
 
@@ -396,13 +440,9 @@
       lead = GEO.greatCircle(CONFIG.origin, head, 48).map(toLatLng);
     }
     layers.flown.setLatLngs(lead.concat(flown));
-    // Reststrecke folgt der Route; weit abseits davon direkt zum Ziel
-    var prog = routeProgress(ac);
-    if (route.points.length && prog.offRouteNm < 200) {
-      layers.remaining.setLatLngs([[ac.lat, ac.lon]].concat(route.points.slice(prog.index + 1).map(toLatLng)));
-    } else {
-      layers.remaining.setLatLngs(GEO.greatCircle(ac, CONFIG.destination, 96).map(toLatLng));
-    }
+    // Restweg: Bogen, der an der aktuellen Flugrichtung ansetzt
+    var predicted = state.predicted && state.predicted.length ? state.predicted : predictedPath(ac);
+    layers.remaining.setLatLngs(predicted.map(toLatLng));
     if (!map.hasLayer(layers.aircraft)) layers.aircraft.addTo(map);
     layers.aircraft.setOpacity(1);
     layers.aircraft.setLatLng([ac.lat, ac.lon]);
@@ -434,7 +474,8 @@
 
     var gs = isNum(ac.groundSpeedKt) ? ac.groundSpeedKt : null;
     // Entfernungen entlang der tatsaechlichen Route, nicht Luftlinie
-    var prog = routeProgress(ac);
+    state.predicted = predictedPath(ac);
+    var prog = routeProgress(ac, state.predicted);
     var totalNm = prog.totalNm;
     var flownNm = prog.flownNm;
     var remainNm = prog.remainingNm;
@@ -903,6 +944,41 @@
     }
   }
 
+  /* ---------- Radarpuls ----------
+     Alle paar Sekunden geht vom Flugzeug ein Ring aus, wächst bis zum
+     Radius des inneren Entfernungsrings und verlischt dabei. */
+  var PULSE_INTERVAL_MS = 2600;
+  var PULSE_DURATION_MS = 2900;
+
+  function emitPulse() {
+    if (!map || !layers.pulses || !state.pulseCenter || !state.pulseRadiusM) return;
+    if (document.hidden) return; // im Hintergrund nichts animieren
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var color = COLORS[state.theme].ring;
+    var ring = L.circle(state.pulseCenter, {
+      radius: 1, fill: false, color: color, weight: 1.4, opacity: 0.75,
+      dashArray: '5 7', interactive: false
+    }).addTo(layers.pulses);
+
+    var start = performance.now();
+    var maxRadius = state.pulseRadiusM;
+
+    function step(now) {
+      var t = Math.min(1, (now - start) / PULSE_DURATION_MS);
+      // Anfangs schnell, zum Rand hin auslaufend
+      var eased = 1 - Math.pow(1 - t, 2);
+      ring.setRadius(eased * maxRadius);
+      ring.setStyle({ opacity: 0.75 * Math.pow(1 - t, 1.6), weight: 1.4 - t * 0.7 });
+      if (t < 1) {
+        requestAnimationFrame(step);
+      } else {
+        layers.pulses.removeLayer(ring);
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
   /* ---------- Sekundentakt ---------- */
 
   /* Einmal pro Sekunde neu zeichnen: Position wird fortgeschrieben,
@@ -968,6 +1044,11 @@
   function routeFromTrack() {
     var track = state.track;
     if (!track || track.length < 20) return false;
+    // Tatsächlich zurückgelegte Strecke aus der gemessenen Spur
+    var flown = 0;
+    for (var k = 1; k < track.length; k += 1) flown += GEO.distanceNm(track[k - 1], track[k]);
+    state.trackLengthNm = flown;
+    state.trackEnd = { lat: track[track.length - 1].lat, lon: track[track.length - 1].lon };
     var step = Math.max(1, Math.floor(track.length / 120));
     var points = [];
     for (var i = 0; i < track.length; i += step) points.push([track[i].lat, track[i].lon, '']);
@@ -1075,6 +1156,7 @@
 
     setInterval(tickCountdown, 1000);
     setInterval(tickDisplay, 1000);
+    setInterval(emitPulse, PULSE_INTERVAL_MS);
     tickCountdown();
 
     try { state.sim = localStorage.getItem(SIM_KEY) !== 'aus'; } catch (err) { state.sim = true; }
@@ -1129,7 +1211,14 @@
   }
 
   // Fuer Tests aus der Konsole / aus dem Smoke-Test heraus
-  window.__ek = { state: state, render: render, refresh: refresh, setTheme: setTheme, deadReckon: deadReckon };
+  window.__ek = {
+    state: state, render: render, refresh: refresh, setTheme: setTheme, deadReckon: deadReckon,
+    // für Tests und Fehlersuche
+    getMap: function () { return map; },
+    getLayers: function () { return layers; },
+    predictedPath: predictedPath,
+    emitPulse: function () { emitPulse(); }
+  };
 
   document.addEventListener('DOMContentLoaded', boot);
 })();
