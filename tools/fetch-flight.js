@@ -15,7 +15,8 @@ const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'data', 'flight.json');
 const TRACK = path.join(ROOT, 'data', 'track.json');
 
-const CALLSIGNS = CONFIG.callsignVariants;
+// Sparsam bleiben: die Dienste drosseln hart. Nur die zwei plausibelsten Kennungen.
+const CALLSIGNS = [CONFIG.callsign, 'UAE50'];
 // airplanes.live verlangt inzwischen einen Schlüssel (403) und bleibt draußen.
 const ENDPOINTS = [
   (cs) => ({ name: 'adsb.lol', url: 'https://api.adsb.lol/v2/callsign/' + cs }),
@@ -56,13 +57,56 @@ function normalize(ac, source) {
   };
 }
 
-async function get(url) {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'EK050-Widget/1.0 (personal flight tracking)', Accept: 'application/json' },
-    signal: AbortSignal.timeout(15000)
-  });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
+async function get(url, retries = 2) {
+  for (let attempt = 0; ; attempt += 1) {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'EK050-Widget/1.0 (personal flight tracking)', Accept: 'application/json' },
+      signal: AbortSignal.timeout(20000)
+    });
+    if (res.ok) return res.json();
+    // Drosselung: warten und erneut versuchen
+    if (res.status === 429 && attempt < retries) {
+      await pause(4000 * (attempt + 1));
+      continue;
+    }
+    throw new Error('HTTP ' + res.status);
+  }
+}
+
+/* OpenSky liefert mit einer einzigen Anfrage alle Flugzeuge im Rechteck
+   zwischen Mitteleuropa und dem Golf – ideal, um zu sehen, was überhaupt
+   unterwegs ist, ohne die anderen Dienste zu drosseln. */
+const OPENSKY_BBOX = 'https://opensky-network.org/api/states/all?lamin=18&lomin=2&lamax=54&lomax=62';
+
+function fromOpenSky(state) {
+  const M_TO_FT = 3.280839895;
+  const MS_TO_KT = 1.9438444924;
+  const altM = num(state[7]) !== null ? num(state[7]) : num(state[13]);
+  return {
+    source: 'opensky',
+    icao24: state[0] || null,
+    callsign: String(state[1] || '').trim(),
+    registration: null,
+    aircraftType: null,
+    lat: num(state[6]),
+    lon: num(state[5]),
+    altitudeFt: altM !== null ? Math.round(altM * M_TO_FT) : null,
+    geoAltitudeFt: num(state[13]) !== null ? Math.round(num(state[13]) * M_TO_FT) : null,
+    groundSpeedKt: num(state[9]) !== null ? Math.round(num(state[9]) * MS_TO_KT) : null,
+    trueAirSpeedKt: null,
+    indicatedAirSpeedKt: null,
+    mach: null,
+    trackDeg: num(state[10]),
+    headingDeg: num(state[10]),
+    verticalRateFpm: num(state[11]) !== null ? Math.round(num(state[11]) * M_TO_FT * 60) : null,
+    squawk: state[14] || null,
+    windDirDeg: null,
+    windSpeedKt: null,
+    outsideAirTempC: null,
+    onGround: Boolean(state[8]),
+    positionAgeSec: num(state[4]) !== null ? Math.max(0, Math.round(Date.now() / 1000 - num(state[4]))) : null,
+    observedAt: Date.now()
+  };
 }
 
 (async () => {
@@ -86,7 +130,7 @@ async function get(url) {
       } catch (err) {
         attempts.push({ label, status: String(err.message || err) });
       }
-      await pause(1200);
+      await pause(2500);
     }
   }
 
@@ -94,34 +138,23 @@ async function get(url) {
      der Strecke überhaupt sehen. Das trennt "Feed kaputt" von "nicht in der Luft". */
   let nearby = [];
   if (!aircraft) {
-    const probes = [
-      [48.0, 12.0, 'Muenchen'], [44.5, 16.0, 'Adria'], [37.0, 24.0, 'Griechenland'],
-      [30.5, 31.0, 'Aegypten'], [24.5, 38.0, 'Rotes Meer'], [24.7, 46.7, 'Saudi'],
-      [25.2, 55.3, 'Dubai']
-    ];
-    const seen = new Map();
-    for (const [lat, lon, name] of probes) {
-      try {
-        const json = await get('https://api.adsb.lol/v2/point/' + lat + '/' + lon + '/250');
-        const list = (json && json.ac) || [];
-        let uae = 0;
-        for (const a of list) {
-          const cs = String(a.flight || '').trim().toUpperCase();
-          if (!cs.startsWith('UAE')) continue;
-          uae += 1;
-          seen.set(cs, {
-            callsign: cs, registration: a.r || null, type: a.t || null,
-            lat: num(a.lat), lon: num(a.lon), altitudeFt: a.alt_baro, groundSpeedKt: num(a.gs),
-            trackDeg: num(a.track), area: name
-          });
-        }
-        attempts.push({ label: 'Umkreis ' + name, status: list.length + ' Flugzeuge, davon ' + uae + ' Emirates' });
-      } catch (err) {
-        attempts.push({ label: 'Umkreis ' + name, status: String(err.message || err) });
-      }
-      await pause(1200);
+    try {
+      const json = await get(OPENSKY_BBOX, 1);
+      const states = (json && json.states) || [];
+      const emirates = states
+        .filter((st) => String(st[1] || '').trim().toUpperCase().startsWith('UAE'))
+        .map(fromOpenSky)
+        .filter((a) => a.lat !== null);
+      attempts.push({ label: 'opensky Korridor', status: states.length + ' Flugzeuge im Rechteck, davon ' + emirates.length + ' Emirates' });
+      nearby = emirates;
+
+      // Ist unsere Maschine darunter? Dann ist sie gefunden.
+      const target = emirates.find((a) => CONFIG.callsignVariants
+        .map((v) => v.toUpperCase()).includes(a.callsign.toUpperCase()));
+      if (target) { aircraft = target; attempts.push({ label: 'opensky ' + target.callsign, status: 'OK' }); }
+    } catch (err) {
+      attempts.push({ label: 'opensky Korridor', status: String(err.message || err) });
     }
-    nearby = [...seen.values()];
   }
 
   const payload = {
