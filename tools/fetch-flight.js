@@ -115,10 +115,54 @@ function fromOpenSky(state) {
 
   /* Zuerst über das Kennzeichen suchen: eindeutig und unabhängig davon, welches
      Rufzeichen die Besatzung gesetzt hat. */
+  /* Die ICAO-24-Bit-Adresse ist die Kennung, die der Transponder tatsächlich
+     sendet. Sie einmal aus dem Kennzeichen auflösen und danach suchen. */
+  let hex = null;
   if (CONFIG.registration) {
+    for (const [name, url, pick] of [
+      ['adsbdb', 'https://api.adsbdb.com/v0/aircraft/' + CONFIG.registration,
+        (j) => j && j.response && j.response.aircraft && j.response.aircraft.mode_s],
+      ['hexdb', 'https://hexdb.io/reg-hex?reg=' + CONFIG.registration, (j) => (typeof j === 'string' ? j : null)]
+    ]) {
+      try {
+        const json = await get(url, 1);
+        const value = pick(json);
+        if (value) {
+          hex = String(value).toLowerCase().trim();
+          attempts.push({ label: name + ' Hex-Auflösung', status: CONFIG.registration + ' = ' + hex });
+          break;
+        }
+        attempts.push({ label: name + ' Hex-Auflösung', status: 'keine Hexadresse geliefert' });
+      } catch (err) {
+        attempts.push({ label: name + ' Hex-Auflösung', status: String(err.message || err) });
+      }
+      await pause(1500);
+    }
+  }
+
+  if (hex) {
+    for (const [name, url] of [
+      ['adsb.lol hex', 'https://api.adsb.lol/v2/hex/' + hex],
+      ['adsb.fi hex', 'https://opendata.adsb.fi/api/v2/hex/' + hex]
+    ]) {
+      const label = name + ' ' + hex;
+      try {
+        const json = await get(url);
+        const list = (json && (json.ac || json.aircraft)) || [];
+        const hit = list.find((a) => Number.isFinite(Number(a.lat)));
+        if (hit) { aircraft = normalize(hit, name); attempts.push({ label, status: 'OK' }); break; }
+        attempts.push({ label, status: 'antwortet, kein Treffer (' + list.length + ' Einträge)' });
+      } catch (err) {
+        attempts.push({ label, status: String(err.message || err) });
+      }
+      await pause(2500);
+    }
+  }
+
+  if (!aircraft && CONFIG.registration) {
     for (const [name, url] of [
       ['adsb.lol reg', 'https://api.adsb.lol/v2/reg/' + CONFIG.registration],
-      ['adsb.fi reg', 'https://opendata.adsb.fi/api/v2/reg/' + CONFIG.registration]
+      ['adsb.lol reg kompakt', 'https://api.adsb.lol/v2/reg/' + CONFIG.registration.replace('-', '')]
     ]) {
       const label = name + ' ' + CONFIG.registration;
       try {
@@ -175,7 +219,8 @@ function fromOpenSky(state) {
 
       // Ist unsere Maschine darunter? Dann ist sie gefunden.
       const target = emirates.find((a) => CONFIG.callsignVariants
-        .map((v) => v.toUpperCase()).includes(a.callsign.toUpperCase()));
+        .map((v) => v.toUpperCase()).includes(a.callsign.toUpperCase()))
+        || (hex ? states.map(fromOpenSky).find((a) => (a.icao24 || '').toLowerCase() === hex) : null);
       if (target) { aircraft = target; attempts.push({ label: 'opensky ' + target.callsign, status: 'OK' }); }
     } catch (err) {
       attempts.push({ label: 'opensky Korridor', status: String(err.message || err) });
