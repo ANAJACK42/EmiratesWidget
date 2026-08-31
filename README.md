@@ -25,6 +25,25 @@ npm start
 Alternativ per Doppelklick: `start.sh` (macOS/Linux) bzw. `start.cmd` (Windows).
 Beim ersten Start werden die Abhängigkeiten (Electron, Leaflet) automatisch geladen.
 
+## Natives Mac-Programm (ohne Electron)
+
+Wenn macOS das von npm geladene Electron-Binary blockiert (XProtect meldet
+„Malware Blocked and Moved to Bin"), gibt es einen Weg ganz ohne Fremd-Binary:
+ein kleines natives Fenster aus `macos/main.swift`, lokal gebaut mit Apples
+Compiler. Es zeigt die Widget-Seite in einem rahmenlosen, immer sichtbaren,
+frei skalierbaren Fenster.
+
+```bash
+xcode-select --install        # einmalig, Apple-Dialog bestätigen
+bash macos/build-mac-app.sh   # erzeugt ~/Applications/EK050.app
+open ~/Applications/EK050.app
+```
+
+Standardmäßig wird `https://anajack42.github.io/EmiratesWidget/` angezeigt;
+eine andere Adresse (etwa eine lokale Kopie) geht über die Umgebungsvariable
+`EK050_URL`. Im Programm: **⌘R** aktualisiert, **⌘P** schaltet „immer im
+Vordergrund" um, **⌘Q** beendet.
+
 ## Einzeldatei ohne alles
 
 `EK050-Widget.html` enthält Anzeige, Logik und beide Designs in einer Datei.
