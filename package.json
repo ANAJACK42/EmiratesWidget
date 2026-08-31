@@ -1,0 +1,18 @@
+{
+  "name": "ek050-flight-widget",
+  "version": "1.0.0",
+  "description": "EK050 (MUC -> DXB) Live-Flight-Widget als Desktop-Overlay: ECAM-Terminal- und Liquid-Glass-Design",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="ecam">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https:;" />
+    <title>EK050 · MUC → DXB</title>
+    <link rel="stylesheet" href="../node_modules/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="shell" class="shell">
+      <!-- Kopfzeile: zugleich Ziehflaeche des rahmenlosen Fensters -->
+      <header class="titlebar" id="titlebar">
+        <div class="ident">
+          <span class="ident-flight" id="identFlight">EK050</span>
+          <span class="ident-callsign" id="identCallsign">UAE50</span>
+          <span class="ident-route">
+            <span id="identOrigin">MUC</span>
+            <span class="ident-arrow">›››</span>
+            <span id="identDest">DXB</span>
+          </span>
+        </div>
+        <div class="titlebar-actions">
+          <button class="tb-btn" id="btnTheme" title="Design umschalten (T)">ECAM</button>
+          <button class="tb-btn" id="btnRefresh" title="Jetzt aktualisieren (R)">↻</button>
+          <button class="tb-btn" id="btnPin" title="Immer im Vordergrund (P)">📌</button>
+          <button class="tb-btn" id="btnMin" title="Minimieren">—</button>
+          <button class="tb-btn tb-btn-close" id="btnClose" title="Schliessen">✕</button>
+        </div>
+      </header>
+
+      <!-- Statuszeile -->
+      <div class="statusbar">
+        <span class="status-led" id="statusLed"></span>
+        <span class="status-text" id="statusText">INITIALISIERE…</span>
+        <span class="status-spacer"></span>
+        <span class="status-src" id="statusSource">SRC —</span>
+        <span class="status-next" id="statusNext">NEXT —</span>
+      </div>
+
+      <!-- Karte -->
+      <section class="map-panel">
+        <div id="map"></div>
+        <div class="map-overlay map-overlay-tl">
+          <div class="ovl-label">POS</div>
+          <div class="ovl-value" id="ovlPos">— —</div>
+        </div>
+        <div class="map-overlay map-overlay-tr">
+          <div class="ovl-label">GS</div>
+          <div class="ovl-value" id="ovlGs">— <small>kt</small></div>
+        </div>
+        <div class="map-overlay map-overlay-bl">
+          <div class="ovl-label">DIST REM</div>
+          <div class="ovl-value" id="ovlRemain">— <small>NM</small></div>
+        </div>
+        <div class="map-overlay map-overlay-br">
+          <div class="ovl-label">ETA DXB</div>
+          <div class="ovl-value" id="ovlEta">—</div>
+        </div>
+      </section>
+
+      <!-- Fortschritt -->
+      <section class="progress-panel">
+        <div class="progress-ends">
+          <span class="pe-code" id="progOrigin">MUC</span>
+          <span class="pe-meta" id="progFlown">— NM</span>
+          <span class="pe-pct" id="progPct">—%</span>
+          <span class="pe-meta" id="progRemaining">— NM</span>
+          <span class="pe-code" id="progDest">DXB</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progFill"></div>
+          <div class="progress-marker" id="progMarker">✈</div>
+        </div>
+      </section>
+
+      <!-- Messwerte -->
+      <section class="grid" id="grid">
+        <div class="cell">
+          <div class="cell-label">GROUND SPEED</div>
+          <div class="cell-value" id="valGs">---</div>
+          <div class="cell-unit">kt <span class="cell-sub" id="subGs">— km/h</span></div>
+        </div>
+        <div class="cell">
+          <div class="cell-label">ALTITUDE</div>
+          <div class="cell-value" id="valAlt">---</div>
+          <div class="cell-unit">ft <span class="cell-sub" id="subAlt">FL---</span></div>
+        </div>
+        <div class="cell">
+          <div class="cell-label">TRACK</div>
+          <div class="cell-value" id="valTrk">---</div>
+          <div class="cell-unit">° <span class="cell-sub" id="subTrk">—</span></div>
+        </div>
+        <div class="cell">
+          <div class="cell-label">VERT SPEED</div>
+          <div class="cell-value" id="valVs">---</div>
+          <div class="cell-unit">ft/min <span class="cell-sub" id="subVs">LEVEL</span></div>
+        </div>
+        <div class="cell">
+          <div class="cell-label">POSITION</div>
+          <div class="cell-value cell-value-sm" id="valPos">--</div>
+          <div class="cell-unit"><span class="cell-sub" id="subPos">—</span></div>
+        </div>
+        <div class="cell">
+          <div class="cell-label">MACH / TAS</div>
+          <div class="cell-value cell-value-sm" id="valMach">--</div>
+          <div class="cell-unit"><span class="cell-sub" id="subMach">—</span></div>
+        </div>
+        <div class="cell">
+          <div class="cell-label">ETA DXB (LT)</div>
+          <div class="cell-value cell-value-sm" id="valEta">--:--</div>
+          <div class="cell-unit"><span class="cell-sub" id="subEta">— verbleibend</span></div>
+        </div>
+        <div class="cell">
+          <div class="cell-label">AIRCRAFT</div>
+          <div class="cell-value cell-value-sm" id="valAcft">--</div>
+          <div class="cell-unit"><span class="cell-sub" id="subAcft">SQUAWK —</span></div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span id="footerLeft">EK050 · A6-— · MUC/EDDM → DXB/OMDB</span>
+        <span class="footer-spacer"></span>
+        <span id="footerRight">UPD —</span>
+      </footer>
+    </div>
+
+    <script src="../config.js"></script>
+    <script src="geo.js"></script>
+    <script src="../node_modules/leaflet/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
