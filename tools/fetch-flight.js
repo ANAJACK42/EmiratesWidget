@@ -16,11 +16,14 @@ const OUT = path.join(ROOT, 'data', 'flight.json');
 const TRACK = path.join(ROOT, 'data', 'track.json');
 
 const CALLSIGNS = CONFIG.callsignVariants;
+// airplanes.live verlangt inzwischen einen Schlüssel (403) und bleibt draußen.
 const ENDPOINTS = [
   (cs) => ({ name: 'adsb.lol', url: 'https://api.adsb.lol/v2/callsign/' + cs }),
-  (cs) => ({ name: 'adsb.fi', url: 'https://opendata.adsb.fi/api/v2/callsign/' + cs }),
-  (cs) => ({ name: 'airplanes.live', url: 'https://api.airplanes.live/v2/callsign/' + cs })
+  (cs) => ({ name: 'adsb.fi', url: 'https://opendata.adsb.fi/api/v2/callsign/' + cs })
 ];
+
+// Beide Dienste drosseln bei zu schnellen Anfragen (HTTP 429)
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
 
@@ -83,11 +86,47 @@ async function get(url) {
       } catch (err) {
         attempts.push({ label, status: String(err.message || err) });
       }
+      await pause(1200);
     }
+  }
+
+  /* Kein Treffer? Dann nachsehen, welche Emirates-Maschinen die Feeds entlang
+     der Strecke überhaupt sehen. Das trennt "Feed kaputt" von "nicht in der Luft". */
+  let nearby = [];
+  if (!aircraft) {
+    const probes = [
+      [48.0, 12.0, 'Muenchen'], [44.5, 16.0, 'Adria'], [37.0, 24.0, 'Griechenland'],
+      [30.5, 31.0, 'Aegypten'], [24.5, 38.0, 'Rotes Meer'], [24.7, 46.7, 'Saudi'],
+      [25.2, 55.3, 'Dubai']
+    ];
+    const seen = new Map();
+    for (const [lat, lon, name] of probes) {
+      try {
+        const json = await get('https://api.adsb.lol/v2/point/' + lat + '/' + lon + '/250');
+        const list = (json && json.ac) || [];
+        let uae = 0;
+        for (const a of list) {
+          const cs = String(a.flight || '').trim().toUpperCase();
+          if (!cs.startsWith('UAE')) continue;
+          uae += 1;
+          seen.set(cs, {
+            callsign: cs, registration: a.r || null, type: a.t || null,
+            lat: num(a.lat), lon: num(a.lon), altitudeFt: a.alt_baro, groundSpeedKt: num(a.gs),
+            trackDeg: num(a.track), area: name
+          });
+        }
+        attempts.push({ label: 'Umkreis ' + name, status: list.length + ' Flugzeuge, davon ' + uae + ' Emirates' });
+      } catch (err) {
+        attempts.push({ label: 'Umkreis ' + name, status: String(err.message || err) });
+      }
+      await pause(1200);
+    }
+    nearby = [...seen.values()];
   }
 
   const payload = {
     updatedAt: new Date().toISOString(),
+    nearbyEmirates: nearby,
     flight: CONFIG.flightIata,
     callsign: CONFIG.callsign,
     ok: Boolean(aircraft),
