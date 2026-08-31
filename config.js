@@ -8,7 +8,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   return {
     // Bauversion – steht im DIAG-Fenster, damit erkennbar ist, welcher Stand läuft
-    version: '2026-08-31.9',
+    version: '2026-08-31.10',
 
     /*
      * Flugnummer (IATA) und Funkrufzeichen (ICAO).
@@ -20,6 +20,12 @@
      */
     flightIata: 'EK050',
     callsign: 'UAE5T',
+    /*
+     * Kennzeichen des Flugzeugs (Emirates A380-861, A6-EEP).
+     * Die Registrierung ist die zuverlässigste Kennung: Sie ändert sich nicht,
+     * während das Rufzeichen je nach Flug wechselt und in den Feeds fehlen kann.
+     */
+    registration: 'A6-EEP',
     // Weitere Schreibweisen, die Feeder liefern oder die an anderen Tagen gelten koennen
     callsignVariants: ['UAE5T', 'UAE50', 'UAE050', 'UAE0050', 'EK50', 'EK050'],
 

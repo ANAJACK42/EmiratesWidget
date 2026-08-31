@@ -113,7 +113,32 @@ function fromOpenSky(state) {
   const attempts = [];
   let aircraft = null;
 
-  outer: for (const callsign of CALLSIGNS) {
+  /* Zuerst über das Kennzeichen suchen: eindeutig und unabhängig davon, welches
+     Rufzeichen die Besatzung gesetzt hat. */
+  if (CONFIG.registration) {
+    for (const [name, url] of [
+      ['adsb.lol reg', 'https://api.adsb.lol/v2/reg/' + CONFIG.registration],
+      ['adsb.fi reg', 'https://opendata.adsb.fi/api/v2/reg/' + CONFIG.registration]
+    ]) {
+      const label = name + ' ' + CONFIG.registration;
+      try {
+        const json = await get(url);
+        const list = (json && (json.ac || json.aircraft)) || [];
+        const hit = list.find((a) => Number.isFinite(Number(a.lat)));
+        if (hit) {
+          aircraft = normalize(hit, name);
+          attempts.push({ label, status: 'OK' });
+          break;
+        }
+        attempts.push({ label, status: 'antwortet, kein Treffer (' + list.length + ' Einträge)' });
+      } catch (err) {
+        attempts.push({ label, status: String(err.message || err) });
+      }
+      await pause(2500);
+    }
+  }
+
+  outer: for (const callsign of (aircraft ? [] : CALLSIGNS)) {
     for (const make of ENDPOINTS) {
       const { name, url } = make(callsign);
       const label = name + ' ' + callsign;
