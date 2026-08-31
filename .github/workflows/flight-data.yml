@@ -1,12 +1,23 @@
 name: Flugdaten holen
 
-# Läuft auf GitHubs Servern, die freien Netzzugang haben. Ergebnis landet als
-# data/flight.json im Repository und wird von GitHub Pages ausgeliefert – das
-# Widget liest die Daten damit von derselben Adresse, ohne CORS-Grenzen.
+# Zwei Betriebsarten:
+#  - Dauerlauf (workflow_dispatch): ein Auftrag läuft mehrere Stunden und fragt
+#    im Takt ab. Verlässlich, weil er nicht auf den GitHub-Zeitplan angewiesen
+#    ist – der verschluckt Fünf-Minuten-Crons unter Last regelmäßig.
+#  - Zeitplan: als Rückfallebene, wenn kein Dauerlauf aktiv ist.
 on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: 'Laufzeit in Minuten (max. 330)'
+        required: false
+        default: '180'
+      interval:
+        description: 'Abstand zwischen den Abfragen in Sekunden'
+        required: false
+        default: '300'
   schedule:
-    - cron: '*/5 * * * *'   # alle 5 Minuten
-  workflow_dispatch:         # und auf Knopfdruck
+    - cron: '*/5 * * * *'
 
 permissions:
   contents: write
@@ -18,6 +29,7 @@ concurrency:
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    timeout-minutes: 340
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,18 +39,31 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Position abrufen
-        run: node tools/fetch-flight.js
-
-      - name: Ergebnis sichern
+      - name: Abfragen und sichern
+        env:
+          MINUTES: ${{ github.event.inputs.minutes || '0' }}
+          INTERVAL: ${{ github.event.inputs.interval || '300' }}
         run: |
-          if [ -n "$(git status --porcelain data/)" ]; then
-            git config user.name  "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add data/
-            git commit -m "Flugdaten $(date -u '+%Y-%m-%d %H:%MZ')"
-            git pull --rebase --autostash origin claude/ek050-flight-tracker-widget-ourg9m
-            git push origin HEAD:claude/ek050-flight-tracker-widget-ourg9m
-          else
-            echo "Keine Änderung an den Flugdaten."
-          fi
+          set -u
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          ENDE=$(( $(date +%s) + MINUTES * 60 ))
+
+          while true; do
+            node tools/fetch-flight.js || echo "Abruf fehlgeschlagen, weiter im Takt"
+
+            if [ -n "$(git status --porcelain data/)" ]; then
+              git add data/
+              git commit -m "Flugdaten $(date -u '+%Y-%m-%d %H:%MZ')"
+              # Zwischenzeitliche Änderungen am Zweig übernehmen, dann schieben
+              git pull --rebase --autostash origin claude/ek050-flight-tracker-widget-ourg9m || true
+              git push origin HEAD:claude/ek050-flight-tracker-widget-ourg9m || echo "Push verschoben"
+            else
+              echo "Keine Änderung an den Flugdaten."
+            fi
+
+            # Einzellauf (Zeitplan) endet hier
+            [ "$(date +%s)" -ge "$ENDE" ] && break
+            sleep "$INTERVAL"
+          done

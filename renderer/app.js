@@ -784,18 +784,37 @@
   /* Von GitHub Actions serverseitig geholte Daten, ausgeliefert von derselben
      Adresse wie die Seite: keine CORS-Grenzen, keine Drosselung, funktioniert
      auch in Netzen, die die ADS-B-Dienste blockieren. */
+  /* Zwei Wege zu denselben Daten: neben der eigenen Adresse auch direkt aus
+     dem Repository. Letzteres funktioniert auch in der Einzeldatei und wenn
+     GitHub Pages gerade neu baut. */
+  var RELAY_BASE = 'https://raw.githubusercontent.com/ANAJACK42/EmiratesWidget/' +
+    'claude/ek050-flight-tracker-widget-ourg9m/';
+
+  async function fetchRelayJson(name, timeoutMs) {
+    var urls = ['data/' + name + '?t=' + Date.now(), RELAY_BASE + 'data/' + name + '?t=' + Date.now()];
+    var lastError = null;
+    for (var i = 0; i < urls.length; i += 1) {
+      try {
+        return { json: await fetchJson(urls[i], timeoutMs), viaRepo: i > 0 };
+      } catch (err) { lastError = err; }
+    }
+    throw lastError || new Error('nicht erreichbar');
+  }
+
   async function fetchRelay(attempts) {
     try {
-      var json = await fetchJson('data/flight.json?t=' + Date.now(), 8000);
+      var relay = await fetchRelayJson('flight.json', 8000);
+      var json = relay.json;
+      var quelle = relay.viaRepo ? 'Repository' : 'eigene Adresse';
       var ageMin = json && json.updatedAt ? (Date.now() - new Date(json.updatedAt).getTime()) / 60000 : 999;
       if (json && json.ok && json.aircraft && ageMin < 20) {
-        attempts.push({ label: 'Repo-Daten (GitHub Actions)', status: 'OK, ' + Math.round(ageMin) + ' min alt' });
+        attempts.push({ label: 'Serverdaten über ' + quelle, status: 'OK, ' + Math.round(ageMin) + ' min alt' });
         var ac = json.aircraft;
         ac.source = (ac.source || 'relay') + ' via Actions';
         ac.observedAt = new Date(json.updatedAt).getTime();
         // Die serverseitig mitgeschriebene Spur ist die tatsächlich geflogene Route
         try {
-          var trail = await fetchJson('data/track.json?t=' + Date.now(), 8000);
+          var trail = (await fetchRelayJson('track.json', 8000)).json;
           if (Array.isArray(trail) && trail.length > 5) {
             state.track = trail.map(function (p) {
               return { lat: p.lat, lon: p.lon, t: new Date(p.t).getTime(), alt: p.alt, gs: p.gs };
@@ -807,12 +826,12 @@
         return ac;
       }
       attempts.push({
-        label: 'Repo-Daten (GitHub Actions)',
+        label: 'Serverdaten über ' + quelle,
         status: json && json.ok ? 'zu alt (' + Math.round(ageMin) + ' min)' : 'kein Treffer im letzten Lauf'
       });
       if (json && json.nearbyEmirates) state.nearby = json.nearbyEmirates;
     } catch (err) {
-      attempts.push({ label: 'Repo-Daten (GitHub Actions)', status: 'nicht verfügbar (nur auf der Webseite)' });
+      attempts.push({ label: 'Serverdaten', status: 'nicht erreichbar: ' + String((err && err.message) || err) });
     }
     return null;
   }
