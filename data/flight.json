@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-31T21:20:45.984Z",
+  "updatedAt": "2026-08-31T21:25:47.551Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
@@ -10,35 +10,35 @@
     "callsign": "UAE5T",
     "registration": "A6-EEP",
     "aircraftType": "A388",
-    "lat": 25.076843,
-    "lon": 55.742542,
-    "altitudeFt": 5450,
+    "lat": 25.219862,
+    "lon": 55.423744,
+    "altitudeFt": 1025,
     "geoAltitudeFt": null,
-    "groundSpeedKt": 290,
+    "groundSpeedKt": 140,
     "trueAirSpeedKt": null,
     "indicatedAirSpeedKt": null,
     "mach": null,
-    "trackDeg": 284,
-    "headingDeg": 284,
-    "verticalRateFpm": -1150,
+    "trackDeg": 301,
+    "headingDeg": 301,
+    "verticalRateFpm": -700,
     "squawk": null,
     "windDirDeg": null,
     "windSpeedKt": null,
     "outsideAirTempC": null,
     "onGround": false,
-    "positionAgeSec": 22,
-    "observedAt": 1788211224000,
+    "positionAgeSec": 7,
+    "observedAt": 1788211541000,
     "flightId": "41711143",
     "verticalRateDerived": true
   },
   "attempts": [
     {
       "label": "flightradar24 41711143",
-      "status": "OK, 945 Spurpunkte"
+      "status": "OK, 995 Spurpunkte"
     },
     {
       "label": "Steig-/Sinkrate",
-      "status": "aus der Spur berechnet: -1150 ft/min über 0.7 min"
+      "status": "aus der Spur berechnet: -700 ft/min über 0.5 min"
     }
   ]
 }
