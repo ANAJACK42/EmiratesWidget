@@ -90,23 +90,41 @@
 
   var map = null;
   var layers = {};
-  var tileLayer = null;
 
-  var TILES = {
+  /* Die Karte kommt ohne Kachel-Server und ohne API-Schluessel aus:
+     Kuestenlinien und Grenzen liegen als Vektordaten in renderer/world.js
+     (Natural Earth, Public Domain) direkt bei. */
+  var COLORS = {
     ecam: {
-      url: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
-      attribution: '© OpenStreetMap · © CARTO'
+      background: '#04100c',
+      land: 'rgba(0, 255, 150, 0.07)', coast: '#00c878', border: 'rgba(0, 255, 150, 0.3)',
+      grid: 'rgba(0, 255, 150, 0.12)',
+      plan: '#1f6f52', flown: '#00ff9c', remaining: '#ffb000', acft: '#00ff9c'
     },
     glass: {
-      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-      attribution: '© OpenStreetMap · © CARTO'
+      background: '#141b2b',
+      land: 'rgba(255, 255, 255, 0.14)', coast: 'rgba(255, 255, 255, 0.5)', border: 'rgba(255, 255, 255, 0.22)',
+      grid: 'rgba(255, 255, 255, 0.09)',
+      plan: 'rgba(255,255,255,0.35)', flown: '#7ec8ff', remaining: 'rgba(190,140,255,0.9)', acft: '#ffffff'
     }
   };
 
-  var COLORS = {
-    ecam: { plan: '#1f6f52', flown: '#00ff9c', remaining: '#ffb000', acft: '#00ff9c' },
-    glass: { plan: 'rgba(255,255,255,0.35)', flown: '#7ec8ff', remaining: 'rgba(190,140,255,0.9)', acft: '#ffffff' }
-  };
+  /* Gradnetz alle 10 Grad - wie auf einem Navigationsdisplay */
+  function graticule() {
+    var lines = [];
+    var lat, lon, line;
+    for (lat = -80; lat <= 80; lat += 10) {
+      line = [];
+      for (lon = -180; lon <= 180; lon += 10) line.push([lat, lon]);
+      lines.push(line);
+    }
+    for (lon = -180; lon <= 180; lon += 10) {
+      line = [];
+      for (lat = -80; lat <= 80; lat += 10) line.push([lat, lon]);
+      lines.push(line);
+    }
+    return lines;
+  }
 
   function airportMarker(apt, label) {
     return L.marker([apt.lat, apt.lon], {
@@ -135,10 +153,29 @@
     map = L.map('map', {
       zoomControl: false,
       attributionControl: true,
-      worldCopyJump: true,
-      preferCanvas: true
+      worldCopyJump: false,
+      preferCanvas: true,
+      minZoom: 2,
+      maxZoom: 9
     });
     map.setView([37, 33], 4);
+    map.attributionControl.setPrefix('');
+    map.attributionControl.addAttribution('Karte: Natural Earth');
+
+    var world = window.EK_WORLD || { land: null, borders: null };
+    layers.grid = L.polyline(graticule(), { color: COLORS.ecam.grid, weight: 0.5, interactive: false }).addTo(map);
+    if (world.land) {
+      layers.land = L.geoJSON(world.land, {
+        interactive: false,
+        style: { fillColor: COLORS.ecam.land, fillOpacity: 1, color: COLORS.ecam.coast, weight: 1 }
+      }).addTo(map);
+    }
+    if (world.borders) {
+      layers.borders = L.geoJSON(world.borders, {
+        interactive: false,
+        style: { color: COLORS.ecam.border, weight: 0.6, fill: false, dashArray: '3 4' }
+      }).addTo(map);
+    }
 
     layers.plan = L.polyline([], { color: COLORS.ecam.plan, weight: 1, opacity: 0.9, dashArray: '2 6' }).addTo(map);
     layers.remaining = L.polyline([], { color: COLORS.ecam.remaining, weight: 2, opacity: 0.9, dashArray: '8 6' }).addTo(map);
@@ -149,7 +186,7 @@
       icon: aircraftIcon(0), interactive: false, keyboard: false, zIndexOffset: 1000
     }).addTo(map);
 
-    applyTileLayer();
+    applyThemeToMap();
     // Geplante Grosskreisroute einmalig zeichnen
     layers.plan.setLatLngs(GEO.greatCircle(CONFIG.origin, CONFIG.destination, 128).map(toLatLng));
     fitRoute();
@@ -157,17 +194,12 @@
 
   function toLatLng(p) { return [p.lat, p.lon]; }
 
-  function applyTileLayer() {
-    var conf = TILES[state.theme] || TILES.ecam;
-    if (tileLayer) map.removeLayer(tileLayer);
-    tileLayer = L.tileLayer(conf.url, {
-      attribution: conf.attribution,
-      subdomains: 'abcd',
-      maxZoom: 12,
-      minZoom: 2,
-      crossOrigin: true
-    }).addTo(map);
+  function applyThemeToMap() {
     var c = COLORS[state.theme];
+    document.getElementById('map').style.background = c.background;
+    if (layers.grid) layers.grid.setStyle({ color: c.grid });
+    if (layers.land) layers.land.setStyle({ fillColor: c.land, color: c.coast });
+    if (layers.borders) layers.borders.setStyle({ color: c.border });
     layers.plan.setStyle({ color: c.plan });
     layers.flown.setStyle({ color: c.flown });
     layers.remaining.setStyle({ color: c.remaining });
@@ -396,7 +428,7 @@
     el.btnTheme.title = state.theme === 'ecam' ? 'Zu Liquid-Glass wechseln (T)' : 'Zu ECAM-Terminal wechseln (T)';
     try { localStorage.setItem(THEME_KEY, state.theme); } catch (err) {}
     if (api) api.saveSettings({ theme: state.theme });
-    if (map) applyTileLayer();
+    if (map) applyThemeToMap();
   }
 
   function toggleTheme() { setTheme(state.theme === 'ecam' ? 'glass' : 'ecam'); }

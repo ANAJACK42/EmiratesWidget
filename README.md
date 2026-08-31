@@ -111,7 +111,11 @@ Reihe nach abgefragt, die erste brauchbare Antwort gewinnt:
 3. [airplanes.live](https://airplanes.live) — `api.airplanes.live/v2/callsign/UAE50`
 4. [OpenSky Network](https://opensky-network.org) — Zustandsvektoren im Korridor MUC–DXB
 
-Kartenkacheln: OpenStreetMap via CARTO (dunkel für ECAM, Voyager für Glass).
+Karte: keine Kachel-Server, kein API-Schlüssel. Küstenlinien und Ländergrenzen
+liegen als Vektordaten in `renderer/world.js` bei (Natural Earth, Public Domain,
+erzeugt aus dem npm-Paket `world-atlas` mit `npm run build:world`). Dadurch
+funktioniert die Karte auch ohne Internetverbindung und ohne dass ein
+Kartenanbieter das Nutzungsverhalten sieht. Dazu ein Gradnetz alle 10 Grad.
 
 Die Abfrage läuft im Electron-Main-Prozess, damit weder CORS noch Browser-Regeln
 stören. Der Renderer bekommt über eine schmale, kontextisolierte Bridge nur die
@@ -159,8 +163,8 @@ renderer/
 
 ## Fehlersuche
 
-* **Karte bleibt leer** → keine Internetverbindung oder CARTO blockiert; die Route
-  wird trotzdem gezeichnet.
+* **Karte bleibt leer** → `renderer/world.js` fehlt (mit `npm run build:world`
+  neu erzeugen); Route und Instrumente laufen davon unabhängig weiter.
 * **`KEINE POSITION VERFUEGBAR`** → der Flug ist gerade bei keinem Feeder sichtbar
   (am Boden, vor dem Abflug oder Funkloch ohne vorherigen Fix).
 * **Fenster unsichtbar/transparent unter Linux** → Compositor nötig (z. B. Picom);
