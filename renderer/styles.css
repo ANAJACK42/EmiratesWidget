@@ -82,6 +82,10 @@ html, body {
 .status-led.stale { color: #ffb000; }
 .status-led.lost { color: #ff4d4d; }
 .status-led.loading { color: #00d4ff; animation: pulse 0.9s ease-in-out infinite; }
+.status-led.flash { animation: flash 0.4s ease-in-out 3; }
+@keyframes flash { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.9); } }
+.status-age { letter-spacing: 0.08em; opacity: 0.85; }
+.shell.tiny .status-age { display: none; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
 /* ---------- Karte ---------- */
@@ -228,6 +232,7 @@ html, body {
 [data-theme="ecam"] .tb-btn-close:hover { background: rgba(255, 60, 60, 0.28); border-color: #ff5555; color: #ffdada; }
 [data-theme="ecam"] .statusbar { color: #00d0ff; border-bottom: 1px solid rgba(0, 255, 150, 0.12); }
 [data-theme="ecam"] .status-text { color: #00ff66; }
+[data-theme="ecam"] .status-age { color: #00d0ff; }
 [data-theme="ecam"] .status-text.caution { color: #ffa000; }
 [data-theme="ecam"] .map-panel { border: 1px solid rgba(0, 255, 150, 0.22); border-radius: 3px; }
 /* Farblogik wie im Cockpit: Weiss = Beschriftung, Gruen = aktiver Wert,

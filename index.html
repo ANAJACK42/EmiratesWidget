@@ -10,7 +10,7 @@
     <title>EK050 · MUC → DXB · Live</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <link rel="stylesheet" href="renderer/styles.css?v=6" />
+    <link rel="stylesheet" href="renderer/styles.css?v=8" />
   </head>
   <body>
     <div id="shell" class="shell">
@@ -26,6 +26,7 @@
         </div>
         <div class="titlebar-actions">
           <button class="tb-btn" id="btnTheme" title="Design umschalten (T)">ECAM</button>
+          <button class="tb-btn" id="btnSim" title="Feinschwankung der Anzeige (S)">SIM</button>
           <button class="tb-btn" id="btnDiag" title="Diagnose anzeigen (D)">DIAG</button>
           <button class="tb-btn" id="btnRefresh" title="Jetzt aktualisieren (R)">↻</button>
           <button class="tb-btn" id="btnPin" title="Immer im Vordergrund (P)">📌</button>
@@ -39,6 +40,7 @@
         <span class="status-text" id="statusText">INITIALISIERE…</span>
         <span class="status-spacer"></span>
         <span class="status-src" id="statusSource">SRC —</span>
+        <span class="status-age" id="statusAge">FIX —</span>
         <span class="status-next" id="statusNext">NEXT —</span>
       </div>
 
@@ -146,12 +148,12 @@
       </footer>
     </div>
 
-    <script src="config.js?v=6"></script>
-    <script src="renderer/geo.js?v=6"></script>
-    <script src="renderer/cities.js?v=6"></script>
-    <script src="renderer/world.js?v=6"></script>
+    <script src="config.js?v=8"></script>
+    <script src="renderer/geo.js?v=8"></script>
+    <script src="renderer/cities.js?v=8"></script>
+    <script src="renderer/world.js?v=8"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="renderer/app.js?v=6"></script>
+    <script src="renderer/app.js?v=8"></script>
   </body>
 </html>

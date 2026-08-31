@@ -17,6 +17,9 @@
     lastFix: null, // letzte echte Position (fuer Koppelnavigation)
     track: [], // [{lat, lon, t, alt, gs}]
     nextRefreshAt: null,
+    fix: null,
+    routeIndex: 0,
+    sim: true,
     source: null,
     loading: false,
     pinned: true
@@ -29,7 +32,7 @@
    'progOrigin','progDest','progFlown','progRemaining','progPct','progFill','progMarker',
    'valGs','subGs','valAlt','subAlt','valTrk','subTrk','valVs','subVs','valPos','subPos',
    'valMach','subMach','valEta','subEta','valAcft','subAcft','footerLeft','footerRight','shell',
-   'btnDiag','diag','diagText','csForm','csInput']
+   'btnDiag','diag','diagText','csForm','csInput','statusAge','btnSim']
     .forEach(function (id) { el[id] = document.getElementById(id); });
 
   /* ---------- Hilfsfunktionen ---------- */
@@ -134,11 +137,20 @@
       };
     }
     var near = nearestRouteIndex(pos);
-    var toPoint = GEO.distanceNm(pos, route.points[near.index]);
-    var flown = route.cumulative[near.index];
-    var remaining = route.totalNm - route.cumulative[near.index] + toPoint;
+    // Einmal passierte Punkte bleiben passiert – sonst springt die Anzeige
+    if (state.routeIndex && near.index < state.routeIndex && near.offRouteNm < 60) {
+      near.index = state.routeIndex;
+    } else {
+      state.routeIndex = near.index;
+    }
+    /* Gemessen wird auf den nächsten VORAUS liegenden Punkt. Auf den
+       nächstgelegenen zu messen ließe die Restdistanz wachsen, sobald das
+       Flugzeug einen Punkt hinter sich lässt. */
+    var ahead = Math.min(near.index + 1, route.points.length - 1);
+    var toAhead = GEO.distanceNm(pos, route.points[ahead]);
+    var remaining = toAhead + (route.totalNm - route.cumulative[ahead]);
     return {
-      flownNm: Math.max(0, flown - toPoint),
+      flownNm: Math.max(0, route.totalNm - remaining),
       remainingNm: Math.max(0, remaining),
       totalNm: route.totalNm,
       offRouteNm: near.offRouteNm,
@@ -439,8 +451,12 @@
       setStatus('stale', 'POSITION VERALTET · ' + minutesToHm(ageSec / 60) + ' ALT');
     } else if (ac.onGround) {
       setStatus('live', 'AM BODEN');
+    } else if (ac.extrapolatedSec > 15) {
+      // Zwischen zwei Positionen: fortgeschrieben, nicht gemessen
+      setStatus('live', 'IM FLUG · KOPPELNAV +' + Math.round(ac.extrapolatedSec / 60) + ' MIN'
+        + (ac.simulated ? ' · SIM' : ''));
     } else {
-      setStatus('live', 'IM FLUG · ADS-B KONTAKT');
+      setStatus('live', 'IM FLUG · POSITION EMPFANGEN' + (ac.simulated ? ' · SIM' : ''));
     }
     el.statusSource.textContent = 'SRC ' + String(ac.source || '—').toUpperCase();
 
@@ -486,11 +502,17 @@
     el.subTrk.textContent = trk !== null ? compassPoint(trk) : '—';
 
     var vs = isNum(ac.verticalRateFpm) ? Math.round(ac.verticalRateFpm / 50) * 50 : null;
+    var vsDerived = false;
+    if (vs === null) {
+      var derived = derivedVerticalSpeed();
+      if (derived) { vs = derived.value; vsDerived = true; }
+    }
     el.valVs.textContent = vs !== null ? (vs > 0 ? '+' + vs : String(vs)) : '---';
-    el.subVs.textContent = vs === null ? '—' : vs > 200 ? 'STEIGFLUG' : vs < -200 ? 'SINKFLUG' : 'REISEFLUG';
+    el.subVs.textContent = vs === null ? '—'
+      : (vs > 200 ? 'STEIGFLUG' : vs < -200 ? 'SINKFLUG' : 'REISEFLUG') + (vsDerived ? ' (BER)' : '');
 
     el.valPos.textContent = GEO.formatLat(ac.lat);
-    el.subPos.textContent = GEO.formatLon(ac.lon);
+    el.subPos.textContent = GEO.formatLon(ac.lon) + (ac.extrapolatedSec ? ' · DR' : '');
 
     var machTxt = isNum(ac.mach) ? 'M ' + ac.mach.toFixed(3) : '—';
     var tas = isNum(ac.trueAirSpeedKt) ? ac.trueAirSpeedKt : null;
@@ -510,6 +532,65 @@
     el.footerRight.textContent = 'v' + (CONFIG.version || '?') + ' · UPD ' + utcTime(now) + ' · ' + timeIn(CONFIG.origin.tz, now) + ' MUC · ' + timeIn(CONFIG.destination.tz, now) + ' DXB';
 
     drawFlight(ac);
+  }
+
+  /* ---------- Laufende Bewegung zwischen zwei Aktualisierungen ----------
+     Die Quelle liefert alle paar Minuten eine Position. Dazwischen wird
+     fortgeschrieben, was sich physikalisch zwingend ergibt: Aus Kurs und
+     Geschwindigkeit folgt die Position, daraus Restdistanz, Fortschritt und
+     ETA. Das ist gerechnet, nicht gemessen, und wird als DR gekennzeichnet
+     (dead reckoning – dasselbe Verfahren nutzt die Navigation an Bord). */
+
+  function extrapolate(fix) {
+    if (!fix || !isNum(fix.groundSpeedKt) || !isNum(fix.trackDeg)) return fix;
+    var seconds = (Date.now() - fix.observedAt) / 1000;
+    if (seconds < 5) return fix;
+    var nm = fix.groundSpeedKt * (seconds / 3600);
+    var toDest = GEO.distanceNm(fix, CONFIG.destination);
+    var moved = GEO.destination(fix, fix.trackDeg, Math.min(nm, Math.max(0, toDest - 1)));
+    var out = Object.assign({}, fix, { lat: moved.lat, lon: moved.lon, extrapolatedSec: Math.round(seconds) });
+
+    // Sinkflug ab etwa 130 NM vor dem Ziel annehmen
+    if (isNum(out.altitudeFt) && toDest < 130 && out.altitudeFt > 5000) {
+      out.altitudeFt = Math.max(3000, Math.round(out.altitudeFt - (nm * 250)));
+    }
+    return out;
+  }
+
+  /* Steig-/Sinkrate aus der aufgezeichneten Spur ableiten, wenn die Quelle
+     keine liefert – der wahrscheinlichste Wert ist die Höhenänderung der
+     letzten Minuten. */
+  function derivedVerticalSpeed() {
+    var track = state.track;
+    if (!track || track.length < 2) return null;
+    var last = track[track.length - 1];
+    if (!isNum(last.alt)) return null;
+    for (var i = track.length - 2; i >= 0; i -= 1) {
+      var p = track[i];
+      if (!isNum(p.alt)) continue;
+      var minutes = (last.t - p.t) / 60000;
+      if (minutes < 0.5) continue;         // zu kurz: Rauschen
+      if (minutes > 8) break;              // zu lang: nicht mehr aktuell
+      var fpm = (last.alt - p.alt) / minutes;
+      return { value: Math.round(fpm / 50) * 50, minutes: minutes };
+    }
+    return { value: 0, minutes: 0 };
+  }
+
+  /* Optionale Sichtbarkeitshilfe: minimales Schwanken um die gemessenen Werte,
+     damit erkennbar bleibt, dass die Anzeige lebt. Wird als SIM ausgewiesen
+     und lässt sich abschalten. */
+  var SIM_KEY = 'ek050.sim';
+
+  function applyJitter(ac) {
+    if (!state.sim || !ac) return ac;
+    var t = Date.now() / 1000;
+    var out = Object.assign({}, ac);
+    if (isNum(out.groundSpeedKt)) out.groundSpeedKt = out.groundSpeedKt + Math.sin(t / 7) * 2.5 + Math.sin(t / 3.1) * 1.2;
+    if (isNum(out.altitudeFt) && out.altitudeFt > 10000) out.altitudeFt = out.altitudeFt + Math.round(Math.sin(t / 11) * 40 / 25) * 25;
+    if (isNum(out.trackDeg)) out.trackDeg = (out.trackDeg + Math.sin(t / 13) * 0.8 + 360) % 360;
+    out.simulated = true;
+    return out;
   }
 
   /* ---------- Koppelnavigation, wenn der Kontakt abreisst ---------- */
@@ -679,6 +760,7 @@
               return { lat: p.lat, lon: p.lon, t: new Date(p.t).getTime(), alt: p.alt, gs: p.gs };
             });
             attempts.push({ label: 'Spur aus dem Repo', status: state.track.length + ' Punkte' });
+            routeFromTrack();
           }
         } catch (err) { /* ohne Spur läuft es auch */ }
         return ac;
@@ -773,8 +855,16 @@
     state.nextRefreshAt = (result && result.nextRefreshAt) || Date.now() + CONFIG.refreshIntervalMs;
 
     if (result && result.ok && result.aircraft) {
+      var isNewFix = !state.fix || state.fix.observedAt !== result.aircraft.observedAt;
       state.aircraft = result.aircraft;
       state.lastFix = result.aircraft;
+      state.fix = result.aircraft;
+      if (isNewFix) {
+        // Zähler läuft ab jetzt neu, und die Statuszeile blitzt kurz auf
+        el.statusLed.classList.add('flash');
+        setTimeout(function () { el.statusLed.classList.remove('flash'); }, 1200);
+        tickCountdown();
+      }
       if (String(result.aircraft.source || '').indexOf('via Actions') === -1) pushTrackPoint(result.aircraft);
       learnRouteIfArrived(result.aircraft);
       render(result.aircraft, { estimated: false });
@@ -813,9 +903,27 @@
     }
   }
 
+  /* ---------- Sekundentakt ---------- */
+
+  /* Einmal pro Sekunde neu zeichnen: Position wird fortgeschrieben,
+     Restdistanz, Fortschritt und ETA laufen mit. */
+  function tickDisplay() {
+    if (!state.fix || state.loading) return;
+    var shown = applyJitter(extrapolate(state.fix));
+    state.aircraft = shown;
+    render(shown, { estimated: false });
+  }
+
   /* ---------- Countdown ---------- */
 
   function tickCountdown() {
+    // Alter der zuletzt empfangenen Position – läuft ab dem Eintreffen neu
+    if (state.fix) {
+      var age = Math.max(0, Math.round((Date.now() - state.fix.observedAt) / 1000));
+      el.statusAge.textContent = 'FIX +' + pad(Math.floor(age / 60)) + ':' + pad(age % 60);
+    } else {
+      el.statusAge.textContent = 'FIX —';
+    }
     if (!state.nextRefreshAt) { el.statusNext.textContent = 'NEXT —'; return; }
     var secs = Math.max(0, Math.round((state.nextRefreshAt - Date.now()) / 1000));
     el.statusNext.textContent = 'NEXT ' + pad(Math.floor(secs / 60)) + ':' + pad(secs % 60);
@@ -853,6 +961,29 @@
 
   /* Eine früher aufgezeichnete, vollständige Spur ist die exakte Route –
      genauer als jede Schätzung. Sie wird bevorzugt, sobald sie vorliegt. */
+  /* Sobald eine echte Spur vorliegt, ist sie die Route: gemessene Punkte bis
+     zur aktuellen Position, danach der Direktkurs zum Ziel. Damit stimmen
+     Restdistanz, Fortschritt und ETA, statt sich an einer Schätzung zu
+     verrechnen. */
+  function routeFromTrack() {
+    var track = state.track;
+    if (!track || track.length < 20) return false;
+    var step = Math.max(1, Math.floor(track.length / 120));
+    var points = [];
+    for (var i = 0; i < track.length; i += step) points.push([track[i].lat, track[i].lon, '']);
+    var last = track[track.length - 1];
+    points.push([last.lat, last.lon, '']);
+    points.push([CONFIG.destination.lat, CONFIG.destination.lon, CONFIG.destination.iata]);
+    route = buildRoute(points);
+    route.source = 'gemessene Spur + Direktkurs (' + track.length + ' Punkte)';
+    route.isPlanned = false;
+    if (map) {
+      layers.plan.setLatLngs(route.points.map(toLatLng));
+      if (layers.waypoints) { map.removeLayer(layers.waypoints); layers.waypoints = null; }
+    }
+    return true;
+  }
+
   function initRoute() {
     var learned = null;
     try { learned = JSON.parse(localStorage.getItem(LEARNED_KEY) || 'null'); } catch (err) { learned = null; }
@@ -943,7 +1074,17 @@
     }
 
     setInterval(tickCountdown, 1000);
+    setInterval(tickDisplay, 1000);
     tickCountdown();
+
+    try { state.sim = localStorage.getItem(SIM_KEY) !== 'aus'; } catch (err) { state.sim = true; }
+    el.btnSim.classList.toggle('active', state.sim);
+    el.btnSim.addEventListener('click', function () {
+      state.sim = !state.sim;
+      try { localStorage.setItem(SIM_KEY, state.sim ? 'an' : 'aus'); } catch (err) {}
+      el.btnSim.classList.toggle('active', state.sim);
+      tickDisplay();
+    });
 
     /* Bedienelemente */
     el.btnTheme.addEventListener('click', toggleTheme);
@@ -979,6 +1120,7 @@
       if (evt.key === 'p' || evt.key === 'P') { if (api) api.toggleAlwaysOnTop(); }
       if (evt.key === 'f' || evt.key === 'F') { userMovedMap = false; fitRoute(); }
       if (evt.key === 'd' || evt.key === 'D') el.btnDiag.click();
+      if (evt.key === 's' || evt.key === 'S') el.btnSim.click();
       if (evt.key === 'Escape' && api) api.close();
     });
 

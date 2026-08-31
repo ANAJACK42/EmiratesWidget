@@ -344,6 +344,23 @@ function fromFr24(data, flightId) {
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(payload, null, 2) + '\n');
 
+  /* Steig-/Sinkrate aus der Spur ableiten, wenn die Quelle keine liefert.
+     Zwei Punkte mit ausreichendem zeitlichem Abstand ergeben den
+     wahrscheinlichsten Wert. */
+  if (aircraft && aircraft.verticalRateFpm === null && fr24Trail && fr24Trail.length > 3) {
+    const points = fr24Trail.filter((p) => Number.isFinite(p.alt));
+    const last = points[points.length - 1];
+    for (let i = points.length - 2; i >= 0; i -= 1) {
+      const minutes = (new Date(last.t) - new Date(points[i].t)) / 60000;
+      if (minutes < 0.5) continue;
+      if (minutes > 8) break;
+      aircraft.verticalRateFpm = Math.round(((last.alt - points[i].alt) / minutes) / 50) * 50;
+      aircraft.verticalRateDerived = true;
+      attempts.push({ label: 'Steig-/Sinkrate', status: 'aus der Spur berechnet: ' + aircraft.verticalRateFpm + ' ft/min über ' + minutes.toFixed(1) + ' min' });
+      break;
+    }
+  }
+
   // FR24 liefert die komplette Spur - die ist genauer als alles Nachgehaltene
   if (fr24Trail && fr24Trail.length > 5) {
     fs.writeFileSync(TRACK, JSON.stringify(fr24Trail.slice(-2000)) + '\n');
