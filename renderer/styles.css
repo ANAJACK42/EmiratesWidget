@@ -377,6 +377,18 @@ html, body {
 [data-theme="ecam"] .city-marker { color: #00d0ff; opacity: 0.85; }
 [data-theme="glass"] .city-marker { color: rgba(255, 255, 255, 0.75); }
 
+/* ---------- Wegpunkte der Route ---------- */
+.wp-marker { pointer-events: none; white-space: nowrap; }
+.wp-cross { position: absolute; left: -3px; top: -6px; font-size: 9px; line-height: 1; }
+.wp-name {
+  position: absolute; left: 8px; top: -5px;
+  font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.08em;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.95);
+}
+#map.labels-off .wp-name { display: none; }
+[data-theme="ecam"] .wp-marker { color: #00ff66; opacity: 0.75; }
+[data-theme="glass"] .wp-marker { color: rgba(190, 140, 255, 0.85); }
+
 /* ---------- Diagnosefenster ---------- */
 .diag { flex: 0 0 auto; margin: 0 10px 8px; max-height: 34vh; overflow: auto; }
 .diag pre {

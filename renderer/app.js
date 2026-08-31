@@ -88,6 +88,64 @@
     saveTrack();
   }
 
+  /* ---------- Route ---------- */
+
+  /* Die Route wird zwischen den Stützpunkten auf Grosskreisstuecke verdichtet,
+     damit Entfernungen entlang der Strecke gemessen werden koennen und die
+     Linie auf der Karte richtig gekruemmt liegt. */
+  var route = { points: [], cumulative: [], totalNm: 0, source: 'geplant' };
+
+  function buildRoute(waypoints) {
+    var points = [];
+    var i, from, to, segments, gc, j;
+    for (i = 1; i < waypoints.length; i += 1) {
+      from = { lat: waypoints[i - 1][0], lon: waypoints[i - 1][1] };
+      to = { lat: waypoints[i][0], lon: waypoints[i][1] };
+      segments = Math.max(2, Math.ceil(GEO.distanceNm(from, to) / 40));
+      gc = GEO.greatCircle(from, to, segments);
+      for (j = (i === 1 ? 0 : 1); j < gc.length; j += 1) points.push(gc[j]);
+    }
+    var cumulative = [0];
+    for (i = 1; i < points.length; i += 1) {
+      cumulative[i] = cumulative[i - 1] + GEO.distanceNm(points[i - 1], points[i]);
+    }
+    return { points: points, cumulative: cumulative, totalNm: cumulative[cumulative.length - 1] || 0 };
+  }
+
+  /* Index des Routenpunktes, der der Position am naechsten liegt */
+  function nearestRouteIndex(pos) {
+    var best = 0;
+    var bestDist = Infinity;
+    for (var i = 0; i < route.points.length; i += 1) {
+      var d = GEO.distanceNm(pos, route.points[i]);
+      if (d < bestDist) { bestDist = d; best = i; }
+    }
+    return { index: best, offRouteNm: bestDist };
+  }
+
+  /* Entfernungen entlang der Route statt Luftlinie */
+  function routeProgress(pos) {
+    if (!route.points.length) {
+      var direct = GEO.distanceNm(CONFIG.origin, CONFIG.destination);
+      return {
+        flownNm: GEO.distanceNm(CONFIG.origin, pos),
+        remainingNm: GEO.distanceNm(pos, CONFIG.destination),
+        totalNm: direct, offRouteNm: 0, index: 0
+      };
+    }
+    var near = nearestRouteIndex(pos);
+    var toPoint = GEO.distanceNm(pos, route.points[near.index]);
+    var flown = route.cumulative[near.index];
+    var remaining = route.totalNm - route.cumulative[near.index] + toPoint;
+    return {
+      flownNm: Math.max(0, flown - toPoint),
+      remainingNm: Math.max(0, remaining),
+      totalNm: route.totalNm,
+      offRouteNm: near.offRouteNm,
+      index: near.index
+    };
+  }
+
   /* ---------- Karte ---------- */
 
   var map = null;
@@ -207,8 +265,8 @@
 
     buildCityLayer();
     applyThemeToMap();
-    // Geplante Grosskreisroute einmalig zeichnen
-    layers.plan.setLatLngs(GEO.greatCircle(CONFIG.origin, CONFIG.destination, 128).map(toLatLng));
+    layers.plan.setLatLngs(route.points.map(toLatLng));
+    drawWaypoints();
     fitRoute();
     return true;
   }
@@ -258,11 +316,30 @@
   function updateCityLayer() {
     if (!layers.cityMarkers) return;
     var zoom = map.getZoom();
+    // Wegpunktnamen erst bei genügend Zoom, sonst nur die Rauten
+    document.getElementById('map').classList.toggle('labels-off', zoom < 5);
     var maxRank = zoom >= 6 ? 3 : zoom >= 4 ? 2 : zoom >= 3 ? 1 : 0;
     layers.cityMarkers.forEach(function (entry) {
       var visible = entry.rank <= maxRank;
       if (visible && !layers.cities.hasLayer(entry.marker)) layers.cities.addLayer(entry.marker);
       if (!visible && layers.cities.hasLayer(entry.marker)) layers.cities.removeLayer(entry.marker);
+    });
+  }
+
+  /* Wegpunkte der Route wie auf einem Navigationsdisplay */
+  function drawWaypoints() {
+    if (!CONFIG.plannedRoute || !route.isPlanned) return;
+    layers.waypoints = L.layerGroup().addTo(map);
+    CONFIG.plannedRoute.forEach(function (wp, index) {
+      if (index === 0 || index === CONFIG.plannedRoute.length - 1) return; // Start und Ziel haben eigene Marken
+      layers.waypoints.addLayer(L.marker([wp[0], wp[1]], {
+        interactive: false, keyboard: false,
+        icon: L.divIcon({
+          className: 'wp-marker',
+          html: '<span class="wp-cross">◇</span><span class="wp-name">' + wp[2] + '</span>',
+          iconSize: [8, 8], iconAnchor: [4, 4]
+        })
+      }));
     });
   }
 
@@ -295,11 +372,25 @@
   function drawFlight(ac) {
     if (!map) return;
     var flown = state.track.map(toLatLng);
-    // Vor dem ersten Fix die Grosskreislinie ab Start als "geflogen" annehmen
+    // Fuer den Abschnitt vor dem ersten aufgezeichneten Punkt der Route folgen,
+    // nicht quer ueber die Karte schneiden.
     var head = state.track.length ? state.track[0] : ac;
-    var lead = GEO.greatCircle(CONFIG.origin, head, 48).map(toLatLng);
+    var lead;
+    if (route.points.length) {
+      var headNear = nearestRouteIndex(head);
+      lead = route.points.slice(0, Math.max(1, headNear.index + 1)).map(toLatLng);
+      if (headNear.offRouteNm > 200) lead = GEO.greatCircle(CONFIG.origin, head, 48).map(toLatLng);
+    } else {
+      lead = GEO.greatCircle(CONFIG.origin, head, 48).map(toLatLng);
+    }
     layers.flown.setLatLngs(lead.concat(flown));
-    layers.remaining.setLatLngs(GEO.greatCircle(ac, CONFIG.destination, 96).map(toLatLng));
+    // Reststrecke folgt der Route; weit abseits davon direkt zum Ziel
+    var prog = routeProgress(ac);
+    if (route.points.length && prog.offRouteNm < 200) {
+      layers.remaining.setLatLngs([[ac.lat, ac.lon]].concat(route.points.slice(prog.index + 1).map(toLatLng)));
+    } else {
+      layers.remaining.setLatLngs(GEO.greatCircle(ac, CONFIG.destination, 96).map(toLatLng));
+    }
     if (!map.hasLayer(layers.aircraft)) layers.aircraft.addTo(map);
     layers.aircraft.setOpacity(1);
     layers.aircraft.setLatLng([ac.lat, ac.lon]);
@@ -330,10 +421,12 @@
     }
 
     var gs = isNum(ac.groundSpeedKt) ? ac.groundSpeedKt : null;
-    var totalNm = GEO.distanceNm(CONFIG.origin, CONFIG.destination);
-    var flownNm = GEO.distanceNm(CONFIG.origin, ac);
-    var remainNm = GEO.distanceNm(ac, CONFIG.destination);
-    var pct = GEO.progressFraction(CONFIG.origin, CONFIG.destination, ac) * 100;
+    // Entfernungen entlang der tatsaechlichen Route, nicht Luftlinie
+    var prog = routeProgress(ac);
+    var totalNm = prog.totalNm;
+    var flownNm = prog.flownNm;
+    var remainNm = prog.remainingNm;
+    var pct = totalNm > 0 ? Math.min(100, Math.max(0, (flownNm / totalNm) * 100)) : 0;
     var etaMin = gs && gs > 40 ? (remainNm / gs) * 60 : null;
     var etaDate = etaMin !== null ? new Date(now.getTime() + etaMin * 60000) : null;
 
@@ -533,6 +626,8 @@
     lines.push('FLUG    ' + CONFIG.flightIata + '  RUFZEICHEN ' + CONFIG.callsign);
     lines.push('ABFRAGE ' + (state.lastCheck ? new Date(state.lastCheck).toLocaleTimeString('de-DE') : '—'));
     lines.push('MODUS   ' + (api ? 'Desktop-App (ohne CORS-Grenzen)' : 'Browser'));
+    lines.push('ROUTE   ' + route.source + ' · ' + Math.round(route.totalNm) + ' NM · '
+      + (CONFIG.plannedRoute ? CONFIG.plannedRoute.length : 2) + ' Stützpunkte');
     lines.push('');
     lines.push('VERSUCHE:');
     (state.diag || []).forEach(function (att) {
@@ -554,6 +649,7 @@
       state.aircraft = result.aircraft;
       state.lastFix = result.aircraft;
       pushTrackPoint(result.aircraft);
+      learnRouteIfArrived(result.aircraft);
       render(result.aircraft, { estimated: false });
       return;
     }
@@ -621,6 +717,40 @@
 
   /* ---------- Start ---------- */
 
+  var LEARNED_KEY = 'ek050.route.v1';
+
+  /* Eine früher aufgezeichnete, vollständige Spur ist die exakte Route –
+     genauer als jede Schätzung. Sie wird bevorzugt, sobald sie vorliegt. */
+  function initRoute() {
+    var learned = null;
+    try { learned = JSON.parse(localStorage.getItem(LEARNED_KEY) || 'null'); } catch (err) { learned = null; }
+
+    if (learned && Array.isArray(learned.points) && learned.points.length > 20) {
+      route = buildRoute(learned.points.map(function (p) { return [p[0], p[1], '']; }));
+      route.source = 'gelernt (' + (learned.date || 'Vorflug') + ')';
+      route.isPlanned = false;
+      return;
+    }
+    route = buildRoute(CONFIG.plannedRoute || [
+      [CONFIG.origin.lat, CONFIG.origin.lon, CONFIG.origin.iata],
+      [CONFIG.destination.lat, CONFIG.destination.lon, CONFIG.destination.iata]
+    ]);
+    route.source = 'geplant (südlicher Korridor)';
+    route.isPlanned = true;
+  }
+
+  /* Am Ende eines Fluges die geflogene Spur als Route sichern */
+  function learnRouteIfArrived(ac) {
+    if (GEO.distanceNm(ac, CONFIG.destination) > 40) return;
+    if (state.track.length < 25) return;
+    try {
+      localStorage.setItem(LEARNED_KEY, JSON.stringify({
+        date: new Date().toISOString().slice(0, 10),
+        points: state.track.map(function (p) { return [Math.round(p.lat * 1000) / 1000, Math.round(p.lon * 1000) / 1000]; })
+      }));
+    } catch (err) { /* nicht kritisch */ }
+  }
+
   async function boot() {
     el.identFlight.textContent = CONFIG.flightIata;
     el.identCallsign.textContent = CONFIG.callsign;
@@ -648,6 +778,7 @@
     }
 
     loadTrack();
+    initRoute();
     if (initMap()) {
       map.on('zoomstart dragstart', function () { userMovedMap = true; });
       // Doppelklick auf die Karte: Automatik-Zoom wieder aktivieren

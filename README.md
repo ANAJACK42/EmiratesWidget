@@ -96,8 +96,10 @@ nächsten Start wiederhergestellt.
 * **Vertical Speed** mit Steig-/Sink-/Reiseflug-Erkennung
 * **Position** als Breite/Länge in Grad und Bogenminuten
 * **Mach / TAS**, Squawk, Registrierung, Muster, ICAO-24-Adresse
-* **Karte** mit geplanter Großkreisroute, tatsächlich geflogener Spur (durchgezogen)
-  und Reststrecke (gestrichelt), Flugzeugsymbol in Flugrichtung gedreht
+* **Karte** mit der Route über den südlichen Korridor (Adria – Griechenland –
+  Mittelmeer – Ägypten – Rotes Meer – Saudi-Arabien – Golf), tatsächlich
+  geflogener Spur (durchgezogen) und Reststrecke (gestrichelt), Flugzeugsymbol
+  in Flugrichtung gedreht
 * **Fortschrittsbalken** mit zurückgelegter und verbleibender Distanz in NM
 * **ETA Dubai** in dortiger Ortszeit sowie Restflugzeit
 
@@ -132,6 +134,25 @@ Sobald wieder Empfang besteht, springt die Anzeige auf die echte Position zurüc
 
 Die geflogene Spur wird lokal (`localStorage`) gespeichert und übersteht einen
 Neustart des Widgets.
+
+## Route
+
+`config.js` enthält unter `plannedRoute` die Stützpunkte der Strecke. Hinterlegt
+ist der südliche Korridor, den Emirates zwischen Europa und Dubai fliegt, seit
+der Luftraum über Syrien, Irak und Iran gemieden wird: über die Adria und
+Griechenland ins Mittelmeer, über Ägypten den Nil hinunter, über das Rote Meer
+nach Saudi-Arabien und von dort an den Golf. Das sind **rund 3060 NM statt 2464 NM**
+auf der geometrisch kürzesten Linie – etwa 24 Prozent Umweg, was die reale
+Flugzeit von gut sechs Stunden erklärt.
+
+Das ist eine begründete Rekonstruktion, kein amtlicher Flugplan. Deshalb lernt
+das Widget die echte Route: Alle Positionen werden mitgeschrieben, und sobald
+ein Flug in Dubai ankommt, wird die geflogene Spur gespeichert und ab dem
+nächsten Flug als Route verwendet. Welche Route gerade gilt, steht im
+DIAG-Fenster (Taste **D**).
+
+Entfernungen, Fortschritt und ETA werden entlang dieser Route gerechnet, nicht
+als Luftlinie – die ETA war vorher systematisch zu optimistisch.
 
 ## Anderen Flug verfolgen
 
