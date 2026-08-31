@@ -109,16 +109,118 @@ function fromOpenSky(state) {
   };
 }
 
+/* ---------------------------------------------------------------------
+ * Flightradar24
+ *
+ * FR24 empfängt zusätzlich über Satelliten und sieht die Maschine deshalb
+ * auch dort, wo die freien Netze aus Bodenempfängern Lücken haben. Genutzt
+ * wird die öffentlich erreichbare JSON-Schnittstelle der Webseite, in
+ * geringem Umfang (eine Abfrage alle fünf Minuten für genau diesen Flug).
+ * ------------------------------------------------------------------- */
+const FR24_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
+    '(KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+  Accept: 'application/json, text/plain, */*',
+  'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8'
+};
+
+async function fr24Get(url) {
+  const res = await fetch(url, { headers: FR24_HEADERS, signal: AbortSignal.timeout(20000) });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+/* Aktuelle Flug-Kennung suchen, falls die hinterlegte veraltet ist */
+async function fr24FindFlightId(flightNumber) {
+  const json = await fr24Get('https://www.flightradar24.com/v1/search/web/find?query=' +
+    encodeURIComponent(flightNumber) + '&limit=20');
+  const results = (json && json.results) || [];
+  const live = results.find((r) => r.type === 'live' || (r.detail && r.detail.callsign));
+  return live ? String(live.id) : null;
+}
+
+function fromFr24(data, flightId) {
+  const trail = (data && data.trail) || [];
+  if (!trail.length) return null;
+  const p = trail[0]; // FR24 liefert den jüngsten Punkt zuerst
+  const ac = (data && data.aircraft) || {};
+  return {
+    aircraft: {
+      source: 'flightradar24',
+      icao24: (ac.identification && ac.identification.modes) || (ac.hex || null),
+      callsign: (data.identification && data.identification.callsign) || null,
+      registration: (ac.registration || (ac.identification && ac.identification.registration)) || null,
+      aircraftType: (ac.model && ac.model.code) || null,
+      lat: num(p.lat),
+      lon: num(p.lng),
+      altitudeFt: num(p.alt),
+      geoAltitudeFt: null,
+      groundSpeedKt: num(p.spd),
+      trueAirSpeedKt: null,
+      indicatedAirSpeedKt: null,
+      mach: null,
+      trackDeg: num(p.hd),
+      headingDeg: num(p.hd),
+      verticalRateFpm: num(p.vs),
+      squawk: (data.status && data.status.squawk) || null,
+      windDirDeg: null,
+      windSpeedKt: null,
+      outsideAirTempC: null,
+      onGround: num(p.alt) !== null && num(p.alt) < 100,
+      positionAgeSec: num(p.ts) !== null ? Math.max(0, Math.round(Date.now() / 1000 - num(p.ts))) : null,
+      observedAt: num(p.ts) !== null ? num(p.ts) * 1000 : Date.now(),
+      flightId: flightId
+    },
+    // FR24 liefert die komplette geflogene Spur mit - das ist die echte Route
+    trail: trail
+      .slice()
+      .reverse()
+      .filter((q) => Number.isFinite(Number(q.lat)) && Number.isFinite(Number(q.lng)))
+      .map((q) => ({
+        t: new Date(Number(q.ts) * 1000).toISOString(),
+        lat: Math.round(Number(q.lat) * 10000) / 10000,
+        lon: Math.round(Number(q.lng) * 10000) / 10000,
+        alt: num(q.alt),
+        gs: num(q.spd)
+      }))
+  };
+}
+
 (async () => {
   const attempts = [];
   let aircraft = null;
+  let fr24Trail = null;
+
+  // 1. Flightradar24 zuerst
+  for (const flightId of [CONFIG.fr24FlightId, 'suchen']) {
+    let id = flightId;
+    try {
+      if (id === 'suchen') {
+        id = await fr24FindFlightId(CONFIG.flightIata.replace(/^([A-Z]{2})0*/, '$1'));
+        if (!id) { attempts.push({ label: 'fr24 Suche', status: 'kein Live-Flug gefunden' }); break; }
+        attempts.push({ label: 'fr24 Suche', status: 'Flug-Kennung ' + id });
+      }
+      const data = await fr24Get('https://data-live.flightradar24.com/clickhandler/?flight=' + id);
+      const mapped = fromFr24(data, id);
+      if (mapped) {
+        aircraft = mapped.aircraft;
+        fr24Trail = mapped.trail;
+        attempts.push({ label: 'flightradar24 ' + id, status: 'OK, ' + mapped.trail.length + ' Spurpunkte' });
+        break;
+      }
+      attempts.push({ label: 'flightradar24 ' + id, status: 'antwortet, keine Spur' });
+    } catch (err) {
+      attempts.push({ label: 'flightradar24 ' + (id || '?'), status: String(err.message || err) });
+    }
+    await pause(1500);
+  }
 
   /* Zuerst über das Kennzeichen suchen: eindeutig und unabhängig davon, welches
      Rufzeichen die Besatzung gesetzt hat. */
   /* Die ICAO-24-Bit-Adresse ist die Kennung, die der Transponder tatsächlich
      sendet. Sie einmal aus dem Kennzeichen auflösen und danach suchen. */
   let hex = null;
-  if (CONFIG.registration) {
+  if (!aircraft && CONFIG.registration) {
     for (const [name, url, pick] of [
       ['adsbdb', 'https://api.adsbdb.com/v0/aircraft/' + CONFIG.registration,
         (j) => j && j.response && j.response.aircraft && j.response.aircraft.mode_s],
@@ -140,7 +242,7 @@ function fromOpenSky(state) {
     }
   }
 
-  if (hex) {
+  if (!aircraft && hex) {
     for (const [name, url] of [
       ['adsb.lol hex', 'https://api.adsb.lol/v2/hex/' + hex],
       ['adsb.fi hex', 'https://opendata.adsb.fi/api/v2/hex/' + hex],
@@ -242,8 +344,10 @@ function fromOpenSky(state) {
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(payload, null, 2) + '\n');
 
-  // Spur mitschreiben, damit die tatsächlich geflogene Route erhalten bleibt
-  if (aircraft) {
+  // FR24 liefert die komplette Spur - die ist genauer als alles Nachgehaltene
+  if (fr24Trail && fr24Trail.length > 5) {
+    fs.writeFileSync(TRACK, JSON.stringify(fr24Trail.slice(-2000)) + '\n');
+  } else if (aircraft) {
     let track = [];
     try { track = JSON.parse(fs.readFileSync(TRACK, 'utf8')); } catch (err) { track = []; }
     if (!Array.isArray(track)) track = [];

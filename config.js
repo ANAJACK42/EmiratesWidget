@@ -8,7 +8,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   return {
     // Bauversion – steht im DIAG-Fenster, damit erkennbar ist, welcher Stand läuft
-    version: '2026-08-31.10',
+    version: '2026-08-31.11',
 
     /*
      * Flugnummer (IATA) und Funkrufzeichen (ICAO).
@@ -26,6 +26,9 @@
      * während das Rufzeichen je nach Flug wechselt und in den Feeds fehlen kann.
      */
     registration: 'A6-EEP',
+    // Flightradar24 sieht die Maschine auch dort, wo Bodenempfänger fehlen
+    // (Satellitenempfang). Die Flug-Kennung stammt aus der FR24-Adresse.
+    fr24FlightId: '41711143',
     // Weitere Schreibweisen, die Feeder liefern oder die an anderen Tagen gelten koennen
     callsignVariants: ['UAE5T', 'UAE50', 'UAE050', 'UAE0050', 'EK50', 'EK050'],
 
