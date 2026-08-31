@@ -157,8 +157,16 @@ als Luftlinie – die ETA war vorher systematisch zu optimistisch.
 ## Anderen Flug verfolgen
 
 In `config.js` `flightIata`, `callsign`, `callsignVariants` sowie `origin`/`destination`
-anpassen — mehr ist nicht nötig. Das Funkrufzeichen ist die ICAO-Airline-Kennung plus
-Flugnummer ohne führende Null (Emirates = `UAE`, also EK050 → `UAE50`).
+anpassen — mehr ist nicht nötig.
+
+**Wichtig zum Rufzeichen:** Es ist nicht zwingend die Airline-Kennung plus Flugnummer.
+Viele Airlines vergeben alphanumerische Rufzeichen, um Verwechslungen im Funk zu
+vermeiden — EK050 fliegt als **`UAE5T`**, nicht als `UAE50`. In den ADS-B-Feeds steht
+das Rufzeichen, nicht die Flugnummer; mit der falschen Kennung findet man nichts,
+obwohl die Maschine in der Luft ist. Nachsehen lässt sich das bei Flightradar24 oder
+direkt im Widget: Der DIAG-Knopf listet alle Emirates-Flüge auf der Strecke, und im
+Eingabefeld darunter lässt sich ein anderes Rufzeichen setzen (auch `EK50`, das wird
+umgesetzt).
 
 Das Aktualisierungsintervall steht ebenfalls dort (`refreshIntervalMs`, Standard 5 Minuten).
 

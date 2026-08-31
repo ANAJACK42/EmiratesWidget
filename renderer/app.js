@@ -29,7 +29,7 @@
    'progOrigin','progDest','progFlown','progRemaining','progPct','progFill','progMarker',
    'valGs','subGs','valAlt','subAlt','valTrk','subTrk','valVs','subVs','valPos','subPos',
    'valMach','subMach','valEta','subEta','valAcft','subAcft','footerLeft','footerRight','shell',
-   'btnDiag','diag','diagText']
+   'btnDiag','diag','diagText','csForm','csInput']
     .forEach(function (id) { el[id] = document.getElementById(id); });
 
   /* ---------- Hilfsfunktionen ---------- */
@@ -531,12 +531,26 @@
      keine CORS-Kopfzeile schickt. Deshalb: erst direkt, dann über
      öffentliche CORS-Weiterleitungen. Jeder Versuch wird protokolliert und
      ist über den DIAG-Knopf sichtbar. */
-  var SOURCES = [
-    { name: 'adsb.lol', url: 'https://api.adsb.lol/v2/callsign/' + CONFIG.callsign },
-    { name: 'adsb.fi', url: 'https://opendata.adsb.fi/api/v2/callsign/' + CONFIG.callsign },
-    { name: 'airplanes.live', url: 'https://api.airplanes.live/v2/callsign/' + CONFIG.callsign },
-    { name: 'adsb.lol/UAE050', url: 'https://api.adsb.lol/v2/callsign/UAE050' }
-  ];
+  var CALLSIGN_KEY = 'ek050.callsign';
+
+  function activeCallsign() {
+    return state.callsign || CONFIG.callsign;
+  }
+
+  function sourcesFor(callsign) {
+    var list = [
+      { name: 'adsb.lol ' + callsign, url: 'https://api.adsb.lol/v2/callsign/' + callsign },
+      { name: 'adsb.fi ' + callsign, url: 'https://opendata.adsb.fi/api/v2/callsign/' + callsign },
+      { name: 'airplanes.live ' + callsign, url: 'https://api.airplanes.live/v2/callsign/' + callsign }
+    ];
+    // Danach die bekannten Schreibvarianten durchprobieren (z. B. UAE50 statt UAE5T)
+    CONFIG.callsignVariants.forEach(function (variant) {
+      var v = variant.toUpperCase();
+      if (v === callsign.toUpperCase()) return;
+      list.push({ name: 'adsb.lol ' + v, url: 'https://api.adsb.lol/v2/callsign/' + v });
+    });
+    return list;
+  }
 
   var PROXIES = [
     { name: 'allorigins', wrap: function (u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); } },
@@ -564,9 +578,11 @@
   function mapAircraft(json, sourceLabel) {
     var list = (json && (json.ac || json.aircraft)) || [];
     if (!Array.isArray(list) || !list.length) return null;
+    var active = activeCallsign().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    var variants = CONFIG.callsignVariants.concat([active, active.replace(/^(\D+)/, '$10')]);
     var wanted = list.filter(function (a) {
       var cs = String(a.flight || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-      return CONFIG.callsignVariants.some(function (v) { return v.toUpperCase().replace(/[^A-Z0-9]/g, '') === cs; });
+      return variants.some(function (v) { return v.toUpperCase().replace(/[^A-Z0-9]/g, '') === cs; });
     });
     var a = (wanted.length ? wanted : list)[0];
     var lat = Number(a.lat), lon = Number(a.lon);
@@ -600,9 +616,36 @@
     return null;
   }
 
+  /* Wenn das Rufzeichen nichts findet: den Korridor absuchen und alle
+     Emirates-Flüge melden, die dort gerade unterwegs sind. So wird sichtbar,
+     ob die Feeds arbeiten und unter welcher Nummer sie tatsächlich fliegt. */
+  async function scanCorridor() {
+    var probes = [[46.2, 14.5], [36.4, 23.6], [30.0, 31.2], [24.6, 34.6], [24.7, 46.7], [25.3, 53.0]];
+    var found = {};
+    for (var i = 0; i < probes.length; i += 1) {
+      var url = 'https://api.adsb.lol/v2/point/' + probes[i][0] + '/' + probes[i][1] + '/250';
+      try {
+        var json = await fetchJson(url, 9000);
+        ((json && json.ac) || []).forEach(function (a) {
+          var cs = String(a.flight || '').trim().toUpperCase();
+          if (cs.indexOf('UAE') !== 0) return;
+          // Nur Maschinen, die grob Richtung Osten/Dubai unterwegs sind
+          found[cs] = {
+            callsign: cs, registration: a.r || '', type: a.t || '',
+            lat: Number(a.lat), lon: Number(a.lon), track: Number(a.track),
+            altitude: a.alt_baro
+          };
+        });
+      } catch (err) { /* nächster Punkt */ }
+    }
+    return Object.keys(found).map(function (k) { return found[k]; });
+  }
+
   async function fetchDirect() {
     var attempts = [];
     var i, j, aircraft;
+
+    var SOURCES = sourcesFor(activeCallsign());
 
     // 1. Direkt
     for (i = 0; i < SOURCES.length; i += 1) {
@@ -618,7 +661,16 @@
       }
     }
 
-    return { ok: false, aircraft: null, attempts: attempts, checkedAt: Date.now(), error: 'feeds' };
+    var answered = attempts.some(function (att) { return att.status === 'antwortet, kein Treffer'; });
+    var nearby = [];
+    if (answered) {
+      // Feeds arbeiten – dann nachsehen, wer sonst unterwegs ist
+      try { nearby = await scanCorridor(); } catch (err) { nearby = []; }
+    }
+    return {
+      ok: false, aircraft: null, attempts: attempts, nearby: nearby,
+      checkedAt: Date.now(), error: answered ? 'kein-treffer' : 'feeds'
+    };
   }
 
   function renderDiag() {
@@ -634,7 +686,20 @@
       lines.push('  ' + (att.status === 'OK' ? '✓' : '✗') + ' ' + att.label + ' — ' + att.status);
     });
     if (!(state.diag || []).length) lines.push('  (noch keine)');
+
+    if ((state.nearby || []).length) {
+      lines.push('');
+      lines.push('EMIRATES-FLUEGE AUF DER STRECKE (aus den Feeds):');
+      state.nearby.forEach(function (f) {
+        lines.push('  ' + f.callsign.padEnd(8) + (f.registration || '------').padEnd(8) +
+          (f.type || '----').padEnd(6) + GEO.formatLat(f.lat) + ' ' + GEO.formatLon(f.lon) +
+          '  ' + (f.altitude === 'ground' ? 'AM BODEN' : f.altitude + ' ft'));
+      });
+      lines.push('');
+      lines.push('Passt eine davon? Rufzeichen unten eintragen und übernehmen.');
+    }
     el.diagText.textContent = lines.join('\n');
+    el.csInput.placeholder = activeCallsign();
   }
 
   function handleResult(result) {
@@ -655,10 +720,15 @@
     }
 
     // Kein Kontakt: letzte bekannte Position fortschreiben
+    state.nearby = (result && result.nearby) || [];
+    renderDiag();
     var estimate = deadReckon(state.lastFix);
     if (estimate) {
       state.aircraft = estimate;
       render(estimate, { estimated: true });
+    } else if (result && result.error === 'kein-treffer') {
+      setStatus('stale', 'FEEDS OK · ' + activeCallsign() + ' NICHT IN DER LUFT');
+      el.statusSource.textContent = 'SRC —';
     } else if (result && result.error === 'feeds') {
       setStatus('lost', 'FEEDS NICHT ERREICHBAR · NAECHSTER VERSUCH LAEUFT');
       el.statusSource.textContent = 'SRC —';
@@ -759,6 +829,9 @@
     el.progOrigin.textContent = CONFIG.origin.iata;
     el.progDest.textContent = CONFIG.destination.iata;
 
+    try { state.callsign = localStorage.getItem(CALLSIGN_KEY) || null; } catch (err) { state.callsign = null; }
+    if (state.callsign) el.identCallsign.textContent = state.callsign;
+
     var savedTheme = null;
     try { savedTheme = localStorage.getItem(THEME_KEY); } catch (err) {}
     if (api) {
@@ -813,6 +886,19 @@
     /* Bedienelemente */
     el.btnTheme.addEventListener('click', toggleTheme);
     el.btnRefresh.addEventListener('click', function () { refresh('manuell'); });
+    el.csForm.addEventListener('submit', function (evt) {
+      evt.preventDefault();
+      var value = el.csInput.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (!value) return;
+      // Eingaben wie "EK50" in das Funkrufzeichen "UAE50" übersetzen
+      if (/^EK\d+$/.test(value)) value = 'UAE' + value.slice(2).replace(/^0+/, '');
+      state.callsign = value;
+      try { localStorage.setItem(CALLSIGN_KEY, value); } catch (err) {}
+      el.identCallsign.textContent = value;
+      el.csInput.value = '';
+      refresh('rufzeichen');
+    });
+
     el.btnDiag.addEventListener('click', function () {
       var open = el.diag.hasAttribute('hidden');
       if (open) { el.diag.removeAttribute('hidden'); renderDiag(); } else { el.diag.setAttribute('hidden', ''); }

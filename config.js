@@ -7,11 +7,18 @@
   else root.EK_CONFIG = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   return {
-    // Flugnummer (IATA) und Funkrufzeichen (ICAO) - EK = Emirates = UAE
+    /*
+     * Flugnummer (IATA) und Funkrufzeichen (ICAO).
+     *
+     * Achtung: Emirates fliegt EK050 nicht unter "UAE50", sondern unter dem
+     * alphanumerischen Rufzeichen "UAE5T" - solche Kennungen vergeben viele
+     * Airlines, um Verwechslungen im Funk zu vermeiden. Genau danach muss in
+     * den ADS-B-Feeds gesucht werden; "UAE50" findet nichts.
+     */
     flightIata: 'EK050',
-    callsign: 'UAE50',
-    // Alternative Schreibweisen, die die ADS-B-Feeder liefern koennen
-    callsignVariants: ['UAE50', 'UAE050', 'UAE0050', 'EK50', 'EK050'],
+    callsign: 'UAE5T',
+    // Weitere Schreibweisen, die Feeder liefern oder die an anderen Tagen gelten koennen
+    callsignVariants: ['UAE5T', 'UAE50', 'UAE050', 'UAE0050', 'EK50', 'EK050'],
 
     origin: {
       iata: 'MUC',

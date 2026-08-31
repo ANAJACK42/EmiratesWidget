@@ -404,6 +404,23 @@ html, body {
   border-radius: 12px; color: rgba(255, 255, 255, 0.85);
 }
 
+/* Eingabe für ein anderes Rufzeichen */
+.diag-form { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 10px; }
+.diag-form label { letter-spacing: 0.1em; opacity: 0.7; }
+.diag-form input { flex: 1 1 auto; min-width: 60px; font: inherit; font-family: var(--font-mono); padding: 4px 6px; }
+.diag-form button { font: inherit; padding: 4px 8px; cursor: pointer; }
+[data-theme="ecam"] .diag-form { color: #00d0ff; }
+[data-theme="ecam"] .diag-form input,
+[data-theme="ecam"] .diag-form button {
+  background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 255, 150, 0.35); color: #00ff66;
+}
+[data-theme="glass"] .diag-form { color: rgba(255, 255, 255, 0.7); }
+[data-theme="glass"] .diag-form input,
+[data-theme="glass"] .diag-form button {
+  background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px; color: #fff;
+}
+
 /* Reduzierte Bewegung respektieren */
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
