@@ -363,6 +363,35 @@ html, body {
   .shell.web .footer { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 }
 
+/* ---------- Städtebeschriftung auf der Karte ---------- */
+.city-marker { pointer-events: none; }
+.city-dot {
+  position: absolute; left: 0; top: 0; width: 3px; height: 3px; border-radius: 50%;
+  background: currentColor; opacity: 0.9;
+}
+.city-name {
+  position: absolute; left: 6px; top: -6px; text-transform: uppercase;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em;
+  white-space: nowrap; text-shadow: 0 0 6px rgba(0, 0, 0, 0.95), 0 0 3px rgba(0, 0, 0, 0.9);
+}
+[data-theme="ecam"] .city-marker { color: #00d0ff; opacity: 0.85; }
+[data-theme="glass"] .city-marker { color: rgba(255, 255, 255, 0.75); }
+
+/* ---------- Diagnosefenster ---------- */
+.diag { flex: 0 0 auto; margin: 0 10px 8px; max-height: 34vh; overflow: auto; }
+.diag pre {
+  margin: 0; padding: 8px 10px; font-family: var(--font-mono); font-size: 10px;
+  line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+}
+[data-theme="ecam"] .diag pre {
+  background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(0, 255, 150, 0.25); color: #00d0ff;
+}
+[data-theme="glass"] .diag { margin: 0 14px 10px; }
+[data-theme="glass"] .diag pre {
+  background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px; color: rgba(255, 255, 255, 0.85);
+}
+
 /* Reduzierte Bewegung respektieren */
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }

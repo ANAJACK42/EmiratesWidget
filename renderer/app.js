@@ -28,7 +28,8 @@
    'ovlWindArrow','ovlTo','ovlBrg','ovlRemain','ovlEta','ovlRange','ovlMode',
    'progOrigin','progDest','progFlown','progRemaining','progPct','progFill','progMarker',
    'valGs','subGs','valAlt','subAlt','valTrk','subTrk','valVs','subVs','valPos','subPos',
-   'valMach','subMach','valEta','subEta','valAcft','subAcft','footerLeft','footerRight','shell']
+   'valMach','subMach','valEta','subEta','valAcft','subAcft','footerLeft','footerRight','shell',
+   'btnDiag','diag','diagText']
     .forEach(function (id) { el[id] = document.getElementById(id); });
 
   /* ---------- Hilfsfunktionen ---------- */
@@ -151,6 +152,14 @@
   }
 
   function initMap() {
+    if (typeof L === 'undefined') {
+      // Kartenbibliothek nicht geladen (z. B. CDN blockiert): Rest läuft weiter
+      document.getElementById('map').innerHTML =
+        '<div style="display:flex;height:100%;align-items:center;justify-content:center;' +
+        'text-align:center;padding:16px;font-size:11px;opacity:.8">KARTE NICHT VERFUEGBAR<br>' +
+        'Kartenbibliothek konnte nicht geladen werden.<br>Instrumente laufen weiter.</div>';
+      return false;
+    }
     map = L.map('map', {
       zoomControl: false,
       attributionControl: true,
@@ -192,18 +201,22 @@
     }).addTo(map);
 
     layers.aircraft = L.marker([CONFIG.origin.lat, CONFIG.origin.lon], {
-      icon: aircraftIcon(0), interactive: false, keyboard: false, zIndexOffset: 1000
-    }).addTo(map);
+      icon: aircraftIcon(0), interactive: false, keyboard: false, zIndexOffset: 1000,
+      opacity: 0 // erst sichtbar, sobald eine echte Position vorliegt
+    });
 
+    buildCityLayer();
     applyThemeToMap();
     // Geplante Grosskreisroute einmalig zeichnen
     layers.plan.setLatLngs(GEO.greatCircle(CONFIG.origin, CONFIG.destination, 128).map(toLatLng));
     fitRoute();
+    return true;
   }
 
   function toLatLng(p) { return [p.lat, p.lon]; }
 
   function applyThemeToMap() {
+    if (!map) return;
     var c = COLORS[state.theme];
     document.getElementById('map').style.background = c.background;
     if (layers.grid) layers.grid.setStyle({ color: c.grid });
@@ -217,9 +230,45 @@
     if (state.aircraft) layers.aircraft.setIcon(aircraftIcon(state.aircraft.trackDeg || 0));
   }
 
+  /* Städte als Orientierungspunkte; Dichte haengt an der Zoomstufe. */
+  function buildCityLayer() {
+    // Städte direkt an Start und Ziel weglassen – dort steht schon die Flughafenmarke
+    var cities = (window.EK_CITIES || []).filter(function (city) {
+      var p = { lat: city[1], lon: city[2] };
+      return GEO.distanceNm(p, CONFIG.origin) > 25 && GEO.distanceNm(p, CONFIG.destination) > 25;
+    });
+    layers.cities = L.layerGroup().addTo(map);
+    layers.cityMarkers = cities.map(function (city) {
+      return {
+        rank: city[3],
+        marker: L.marker([city[1], city[2]], {
+          interactive: false, keyboard: false,
+          icon: L.divIcon({
+            className: 'city-marker',
+            html: '<span class="city-dot"></span><span class="city-name">' + city[0] + '</span>',
+            iconSize: [4, 4], iconAnchor: [2, 2]
+          })
+        })
+      };
+    });
+    map.on('zoomend', updateCityLayer);
+    updateCityLayer();
+  }
+
+  function updateCityLayer() {
+    if (!layers.cityMarkers) return;
+    var zoom = map.getZoom();
+    var maxRank = zoom >= 6 ? 3 : zoom >= 4 ? 2 : zoom >= 3 ? 1 : 0;
+    layers.cityMarkers.forEach(function (entry) {
+      var visible = entry.rank <= maxRank;
+      if (visible && !layers.cities.hasLayer(entry.marker)) layers.cities.addLayer(entry.marker);
+      if (!visible && layers.cities.hasLayer(entry.marker)) layers.cities.removeLayer(entry.marker);
+    });
+  }
+
   var userMovedMap = false;
   function fitRoute() {
-    if (userMovedMap) return;
+    if (!map || userMovedMap) return;
     var pts = [toLatLng(CONFIG.origin), toLatLng(CONFIG.destination)];
     if (state.aircraft) pts.push([state.aircraft.lat, state.aircraft.lon]);
     map.fitBounds(L.latLngBounds(pts).pad(0.18), { animate: false });
@@ -244,12 +293,15 @@
   }
 
   function drawFlight(ac) {
+    if (!map) return;
     var flown = state.track.map(toLatLng);
     // Vor dem ersten Fix die Grosskreislinie ab Start als "geflogen" annehmen
     var head = state.track.length ? state.track[0] : ac;
     var lead = GEO.greatCircle(CONFIG.origin, head, 48).map(toLatLng);
     layers.flown.setLatLngs(lead.concat(flown));
     layers.remaining.setLatLngs(GEO.greatCircle(ac, CONFIG.destination, 96).map(toLatLng));
+    if (!map.hasLayer(layers.aircraft)) layers.aircraft.addTo(map);
+    layers.aircraft.setOpacity(1);
     layers.aircraft.setLatLng([ac.lat, ac.lon]);
     layers.aircraft.setIcon(aircraftIcon(ac.trackDeg || GEO.bearingDeg(ac, CONFIG.destination)));
     fitRoute();
@@ -381,47 +433,120 @@
 
   /* ---------- Datenabruf ---------- */
 
-  async function fetchDirect() {
-    // Fallback fuer den Browserbetrieb (ohne Electron): direkt beim Feed anfragen
-    var urls = [
-      'https://api.adsb.lol/v2/callsign/' + CONFIG.callsign,
-      'https://opendata.adsb.fi/api/v2/callsign/' + CONFIG.callsign,
-      'https://api.airplanes.live/v2/callsign/' + CONFIG.callsign
-    ];
-    for (var i = 0; i < urls.length; i += 1) {
-      try {
-        var res = await fetch(urls[i], { cache: 'no-store' });
-        if (!res.ok) continue;
-        var json = await res.json();
-        var list = (json && (json.ac || json.aircraft)) || [];
-        if (!list.length) continue;
-        var a = list[0];
-        if (!isNum(Number(a.lat))) continue;
-        return {
-          ok: true,
-          aircraft: {
-            source: new URL(urls[i]).hostname,
-            icao24: a.hex, callsign: (a.flight || '').trim(), registration: a.r || null, aircraftType: a.t || null,
-            lat: Number(a.lat), lon: Number(a.lon),
-            altitudeFt: a.alt_baro === 'ground' ? 0 : Number(a.alt_baro),
-            groundSpeedKt: Number(a.gs), trackDeg: Number(a.track),
-            verticalRateFpm: Number(a.baro_rate), mach: Number(a.mach),
-            trueAirSpeedKt: Number(a.tas), indicatedAirSpeedKt: Number(a.ias),
-            geoAltitudeFt: Number(a.alt_geom),
-            windDirDeg: Number(a.wd), windSpeedKt: Number(a.ws), outsideAirTempC: Number(a.oat),
-            squawk: a.squawk || null,
-            onGround: a.alt_baro === 'ground',
-            positionAgeSec: Number(a.seen_pos), observedAt: Date.now()
-          },
-          checkedAt: Date.now()
-        };
-      } catch (err) { /* naechste Quelle versuchen */ }
+  /* --- Quellen und Ausweichwege ------------------------------------
+     Im Browser blockiert die Same-Origin-Regel eine Quelle, sobald diese
+     keine CORS-Kopfzeile schickt. Deshalb: erst direkt, dann über
+     öffentliche CORS-Weiterleitungen. Jeder Versuch wird protokolliert und
+     ist über den DIAG-Knopf sichtbar. */
+  var SOURCES = [
+    { name: 'adsb.lol', url: 'https://api.adsb.lol/v2/callsign/' + CONFIG.callsign },
+    { name: 'adsb.fi', url: 'https://opendata.adsb.fi/api/v2/callsign/' + CONFIG.callsign },
+    { name: 'airplanes.live', url: 'https://api.airplanes.live/v2/callsign/' + CONFIG.callsign },
+    { name: 'adsb.lol/UAE050', url: 'https://api.adsb.lol/v2/callsign/UAE050' }
+  ];
+
+  var PROXIES = [
+    { name: 'allorigins', wrap: function (u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); } },
+    { name: 'codetabs', wrap: function (u) { return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u); } },
+    { name: 'corsproxy.io', wrap: function (u) { return 'https://corsproxy.io/?url=' + encodeURIComponent(u); } },
+    { name: 'isomorphic', wrap: function (u) { return 'https://cors.isomorphic-git.org/' + u; } }
+  ];
+
+  function fetchJson(url, timeoutMs) {
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, timeoutMs || 12000) : null;
+    return fetch(url, { cache: 'no-store', signal: controller ? controller.signal : undefined })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.text();
+      })
+      .then(function (text) {
+        try { return JSON.parse(text); }
+        catch (err) { throw new Error('kein JSON (' + text.slice(0, 40) + ')'); }
+      })
+      .finally(function () { if (timer) clearTimeout(timer); });
+  }
+
+  /* Antwort der readsb-Feeds in unser Format bringen */
+  function mapAircraft(json, sourceLabel) {
+    var list = (json && (json.ac || json.aircraft)) || [];
+    if (!Array.isArray(list) || !list.length) return null;
+    var wanted = list.filter(function (a) {
+      var cs = String(a.flight || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      return CONFIG.callsignVariants.some(function (v) { return v.toUpperCase().replace(/[^A-Z0-9]/g, '') === cs; });
+    });
+    var a = (wanted.length ? wanted : list)[0];
+    var lat = Number(a.lat), lon = Number(a.lon);
+    if (!isNum(lat) || !isNum(lon)) return null;
+    var onGround = a.alt_baro === 'ground';
+    return {
+      source: sourceLabel, icao24: a.hex || null, callsign: (a.flight || '').trim() || CONFIG.callsign,
+      registration: a.r || null, aircraftType: a.t || null, lat: lat, lon: lon,
+      altitudeFt: onGround ? 0 : Number(a.alt_baro), geoAltitudeFt: Number(a.alt_geom),
+      groundSpeedKt: Number(a.gs), trueAirSpeedKt: Number(a.tas), indicatedAirSpeedKt: Number(a.ias),
+      mach: Number(a.mach), trackDeg: isNum(Number(a.track)) ? Number(a.track) : Number(a.true_heading),
+      headingDeg: Number(a.true_heading), verticalRateFpm: isNum(Number(a.baro_rate)) ? Number(a.baro_rate) : Number(a.geom_rate),
+      squawk: a.squawk || null, windDirDeg: Number(a.wd), windSpeedKt: Number(a.ws),
+      outsideAirTempC: Number(a.oat), onGround: onGround,
+      positionAgeSec: isNum(Number(a.seen_pos)) ? Number(a.seen_pos) : Number(a.seen),
+      observedAt: Date.now()
+    };
+  }
+
+  async function tryUrl(url, label, attempts) {
+    try {
+      var json = await fetchJson(url, 12000);
+      var aircraft = mapAircraft(json, label);
+      if (aircraft) { attempts.push({ label: label, status: 'OK' }); return aircraft; }
+      attempts.push({ label: label, status: 'antwortet, kein Treffer' });
+    } catch (err) {
+      var msg = String((err && err.message) || err);
+      if (msg === 'Failed to fetch' || /NetworkError|abort/i.test(msg)) msg = 'blockiert/CORS oder Zeitüberschreitung';
+      attempts.push({ label: label, status: msg });
     }
-    return { ok: false, aircraft: null, checkedAt: Date.now(), error: 'feeds' };
+    return null;
+  }
+
+  async function fetchDirect() {
+    var attempts = [];
+    var i, j, aircraft;
+
+    // 1. Direkt
+    for (i = 0; i < SOURCES.length; i += 1) {
+      aircraft = await tryUrl(SOURCES[i].url, SOURCES[i].name, attempts);
+      if (aircraft) return { ok: true, aircraft: aircraft, attempts: attempts, checkedAt: Date.now() };
+    }
+
+    // 2. Über CORS-Weiterleitungen
+    for (j = 0; j < PROXIES.length; j += 1) {
+      for (i = 0; i < SOURCES.length; i += 1) {
+        aircraft = await tryUrl(PROXIES[j].wrap(SOURCES[i].url), PROXIES[j].name + '→' + SOURCES[i].name, attempts);
+        if (aircraft) return { ok: true, aircraft: aircraft, attempts: attempts, checkedAt: Date.now() };
+      }
+    }
+
+    return { ok: false, aircraft: null, attempts: attempts, checkedAt: Date.now(), error: 'feeds' };
+  }
+
+  function renderDiag() {
+    var lines = [];
+    lines.push('FLUG    ' + CONFIG.flightIata + '  RUFZEICHEN ' + CONFIG.callsign);
+    lines.push('ABFRAGE ' + (state.lastCheck ? new Date(state.lastCheck).toLocaleTimeString('de-DE') : '—'));
+    lines.push('MODUS   ' + (api ? 'Desktop-App (ohne CORS-Grenzen)' : 'Browser'));
+    lines.push('');
+    lines.push('VERSUCHE:');
+    (state.diag || []).forEach(function (att) {
+      lines.push('  ' + (att.status === 'OK' ? '✓' : '✗') + ' ' + att.label + ' — ' + att.status);
+    });
+    if (!(state.diag || []).length) lines.push('  (noch keine)');
+    el.diagText.textContent = lines.join('\n');
   }
 
   function handleResult(result) {
     state.loading = false;
+    state.diag = (result && result.attempts) || [];
+    state.lastCheck = (result && result.checkedAt) || Date.now();
+    renderDiag();
     el.btnRefresh.classList.remove('active');
     state.nextRefreshAt = (result && result.nextRefreshAt) || Date.now() + CONFIG.refreshIntervalMs;
 
@@ -523,10 +648,11 @@
     }
 
     loadTrack();
-    initMap();
-    map.on('zoomstart dragstart', function () { userMovedMap = true; });
-    // Doppelklick auf die Karte: Automatik-Zoom wieder aktivieren
-    map.on('dblclick', function () { userMovedMap = false; fitRoute(); });
+    if (initMap()) {
+      map.on('zoomstart dragstart', function () { userMovedMap = true; });
+      // Doppelklick auf die Karte: Automatik-Zoom wieder aktivieren
+      map.on('dblclick', function () { userMovedMap = false; fitRoute(); });
+    }
 
     if (state.track.length) {
       var last = state.track[state.track.length - 1];
@@ -556,6 +682,12 @@
     /* Bedienelemente */
     el.btnTheme.addEventListener('click', toggleTheme);
     el.btnRefresh.addEventListener('click', function () { refresh('manuell'); });
+    el.btnDiag.addEventListener('click', function () {
+      var open = el.diag.hasAttribute('hidden');
+      if (open) { el.diag.removeAttribute('hidden'); renderDiag(); } else { el.diag.setAttribute('hidden', ''); }
+      el.btnDiag.classList.toggle('active', open);
+      if (map) setTimeout(function () { map.invalidateSize({ animate: false }); }, 0);
+    });
     el.btnPin.addEventListener('click', function () {
       if (api) api.toggleAlwaysOnTop();
     });
@@ -567,6 +699,7 @@
       if (evt.key === 'r' || evt.key === 'R') refresh('tastatur');
       if (evt.key === 'p' || evt.key === 'P') { if (api) api.toggleAlwaysOnTop(); }
       if (evt.key === 'f' || evt.key === 'F') { userMovedMap = false; fitRoute(); }
+      if (evt.key === 'd' || evt.key === 'D') el.btnDiag.click();
       if (evt.key === 'Escape' && api) api.close();
     });
 
