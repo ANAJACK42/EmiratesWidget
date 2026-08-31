@@ -9,6 +9,10 @@ const root = path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 let html = read('index.html');
+// Der Web-Einstieg traegt Versionsstempel (?v=N) gegen den Browser-Cache;
+// fuer die Einzeldatei werden sie vor dem Einbetten entfernt.
+html = html.replace(/(src|href)="([^"]+)\?v=\d+"/g, '$1="$2"');
+
 const inlines = [
   ['<link rel="stylesheet" href="renderer/styles.css" />', '<style>\n' + read('renderer/styles.css') + '\n</style>'],
   ['<script src="config.js"></script>', '<script>\n' + read('config.js') + '\n</script>'],

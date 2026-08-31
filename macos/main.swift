@@ -18,6 +18,20 @@ let widgetURL: URL = {
     return URL(string: raw) ?? URL(string: fallback)!
 }()
 
+/// Unsichtbarer Streifen über der Kopfzeile der Seite: Der WKWebView nimmt
+/// sonst jeden Klick entgegen, sodass sich das rahmenlose Fenster nicht
+/// verschieben lässt. Hier durchgereicht an performDrag.
+final class DragStrip: NSView {
+    override func mouseDown(with event: NSEvent) {
+        window?.performDrag(with: event)
+    }
+
+    // Doppelklick auf die Kopfzeile: wie bei jedem Mac-Fenster zoomen
+    override func mouseUp(with event: NSEvent) {
+        if event.clickCount == 2 { window?.zoom(nil) }
+    }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     var window: NSWindow!
     var webView: WKWebView!
@@ -67,6 +81,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         // Position und Größe merken
         window.setFrameAutosaveName("EK050WidgetWindow")
         if window.frame.origin == .zero { window.center() }
+
+        // Ziehflaeche oben einhaengen: volle Breite bis auf die rechten
+        // 130 Punkte, dort liegen die Knöpfe der Seite (Design, Aktualisieren).
+        if let content = window.contentView {
+            let stripHeight: CGFloat = 38
+            let strip = DragStrip(frame: NSRect(x: 0,
+                                                y: content.bounds.height - stripHeight,
+                                                width: max(0, content.bounds.width - 130),
+                                                height: stripHeight))
+            strip.autoresizingMask = [.width, .minYMargin]
+            content.addSubview(strip)
+        }
 
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)

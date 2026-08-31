@@ -24,7 +24,8 @@
 
   var el = {};
   ['identFlight','identCallsign','identOrigin','identDest','btnTheme','btnRefresh','btnPin','btnMin','btnClose',
-   'statusLed','statusText','statusSource','statusNext','ovlPos','ovlGs','ovlRemain','ovlEta',
+   'statusLed','statusText','statusSource','statusNext','ovlPos','ovlGs','ovlTas','ovlWind',
+   'ovlWindArrow','ovlTo','ovlBrg','ovlRemain','ovlEta','ovlRange','ovlMode',
    'progOrigin','progDest','progFlown','progRemaining','progPct','progFill','progMarker',
    'valGs','subGs','valAlt','subAlt','valTrk','subTrk','valVs','subVs','valPos','subPos',
    'valMach','subMach','valEta','subEta','valAcft','subAcft','footerLeft','footerRight','shell']
@@ -98,13 +99,13 @@
     ecam: {
       background: '#04100c',
       land: 'rgba(0, 255, 150, 0.07)', coast: '#00c878', border: 'rgba(0, 255, 150, 0.3)',
-      grid: 'rgba(0, 255, 150, 0.12)',
-      plan: '#1f6f52', flown: '#00ff9c', remaining: '#ffb000', acft: '#00ff9c'
+      grid: 'rgba(0, 255, 150, 0.12)', ring: 'rgba(0, 208, 255, 0.38)',
+      plan: 'rgba(255, 255, 255, 0.28)', flown: '#00ff66', remaining: '#00ff66', acft: '#ffffff'
     },
     glass: {
       background: '#141b2b',
       land: 'rgba(255, 255, 255, 0.14)', coast: 'rgba(255, 255, 255, 0.5)', border: 'rgba(255, 255, 255, 0.22)',
-      grid: 'rgba(255, 255, 255, 0.09)',
+      grid: 'rgba(255, 255, 255, 0.09)', ring: 'rgba(255, 255, 255, 0.3)',
       plan: 'rgba(255,255,255,0.35)', flown: '#7ec8ff', remaining: 'rgba(190,140,255,0.9)', acft: '#ffffff'
     }
   };
@@ -126,12 +127,12 @@
     return lines;
   }
 
-  function airportMarker(apt, label) {
+  function airportMarker(apt, label, kind) {
     return L.marker([apt.lat, apt.lon], {
       interactive: false,
       keyboard: false,
       icon: L.divIcon({
-        className: 'apt-marker',
+        className: 'apt-marker apt-' + kind,
         html: '<div class="apt-dot"></div><div class="apt-label">' + label + '</div>',
         iconSize: [10, 10],
         iconAnchor: [5, 5]
@@ -178,10 +179,18 @@
     }
 
     layers.plan = L.polyline([], { color: COLORS.ecam.plan, weight: 1, opacity: 0.9, dashArray: '2 6' }).addTo(map);
-    layers.remaining = L.polyline([], { color: COLORS.ecam.remaining, weight: 2, opacity: 0.9, dashArray: '8 6' }).addTo(map);
+    layers.remaining = L.polyline([], { color: COLORS.ecam.remaining, weight: 1.6, opacity: 0.85, dashArray: '10 8' }).addTo(map);
     layers.flown = L.polyline([], { color: COLORS.ecam.flown, weight: 2.5, opacity: 1 }).addTo(map);
-    layers.origin = airportMarker(CONFIG.origin, CONFIG.origin.iata).addTo(map);
-    layers.destination = airportMarker(CONFIG.destination, CONFIG.destination.iata).addTo(map);
+    layers.origin = airportMarker(CONFIG.origin, CONFIG.origin.iata, 'origin').addTo(map);
+    layers.destination = airportMarker(CONFIG.destination, CONFIG.destination.iata, 'dest').addTo(map);
+    // Entfernungsringe (halbe und volle Reichweite) um das Flugzeug
+    layers.rangeOuter = L.circle([CONFIG.origin.lat, CONFIG.origin.lon], {
+      radius: 0, fill: false, color: COLORS.ecam.ring, weight: 1, dashArray: '5 7', interactive: false
+    }).addTo(map);
+    layers.rangeInner = L.circle([CONFIG.origin.lat, CONFIG.origin.lon], {
+      radius: 0, fill: false, color: COLORS.ecam.ring, weight: 1, dashArray: '5 7', interactive: false
+    }).addTo(map);
+
     layers.aircraft = L.marker([CONFIG.origin.lat, CONFIG.origin.lon], {
       icon: aircraftIcon(0), interactive: false, keyboard: false, zIndexOffset: 1000
     }).addTo(map);
@@ -200,6 +209,8 @@
     if (layers.grid) layers.grid.setStyle({ color: c.grid });
     if (layers.land) layers.land.setStyle({ fillColor: c.land, color: c.coast });
     if (layers.borders) layers.borders.setStyle({ color: c.border });
+    if (layers.rangeOuter) layers.rangeOuter.setStyle({ color: c.ring });
+    if (layers.rangeInner) layers.rangeInner.setStyle({ color: c.ring });
     layers.plan.setStyle({ color: c.plan });
     layers.flown.setStyle({ color: c.flown });
     layers.remaining.setStyle({ color: c.remaining });
@@ -214,6 +225,24 @@
     map.fitBounds(L.latLngBounds(pts).pad(0.18), { animate: false });
   }
 
+  /* Auf einem Navigationsdisplay ist die Reichweite eine feste Stufe.
+     Passende Stufe zur aktuellen Kartenausdehnung waehlen und Ringe setzen. */
+  var ND_RANGES = [10, 20, 40, 80, 160, 320, 640];
+
+  function updateRangeRings(ac) {
+    var center = map.getCenter();
+    var north = map.getBounds().getNorth();
+    var spanNm = GEO.distanceNm({ lat: center.lat, lon: center.lng }, { lat: north, lon: center.lng });
+    var range = ND_RANGES[ND_RANGES.length - 1];
+    for (var i = 0; i < ND_RANGES.length; i += 1) {
+      if (ND_RANGES[i] >= spanNm * 0.85) { range = ND_RANGES[i]; break; }
+    }
+    var metersPerNm = 1852;
+    layers.rangeOuter.setLatLng([ac.lat, ac.lon]).setRadius(range * metersPerNm);
+    layers.rangeInner.setLatLng([ac.lat, ac.lon]).setRadius((range / 2) * metersPerNm);
+    el.ovlRange.textContent = range + ' NM';
+  }
+
   function drawFlight(ac) {
     var flown = state.track.map(toLatLng);
     // Vor dem ersten Fix die Grosskreislinie ab Start als "geflogen" annehmen
@@ -224,6 +253,7 @@
     layers.aircraft.setLatLng([ac.lat, ac.lon]);
     layers.aircraft.setIcon(aircraftIcon(ac.trackDeg || GEO.bearingDeg(ac, CONFIG.destination)));
     fitRoute();
+    updateRangeRings(ac);
   }
 
   /* ---------- Anzeige ---------- */
@@ -231,6 +261,8 @@
   function setStatus(kind, text) {
     el.statusLed.className = 'status-led ' + kind;
     el.statusText.textContent = text;
+    // Airbus-Logik: Amber = Vorsicht, Rot = Warnung
+    el.statusText.classList.toggle('caution', kind === 'stale');
     el.statusText.classList.toggle('warn', kind === 'lost');
   }
 
@@ -267,11 +299,25 @@
     }
     el.statusSource.textContent = 'SRC ' + String(ac.source || '—').toUpperCase();
 
-    /* Karten-Overlays */
+    /* Karten-Overlays im Stil eines Navigationsdisplays */
     el.ovlPos.textContent = GEO.formatLat(ac.lat) + ' ' + GEO.formatLon(ac.lon);
-    el.ovlGs.innerHTML = (gs !== null ? Math.round(gs) : '—') + ' <small>kt</small>';
-    el.ovlRemain.innerHTML = Math.round(remainNm) + ' <small>NM</small>';
-    el.ovlEta.textContent = etaDate ? timeIn(CONFIG.destination.tz, etaDate) + ' LT' : '—';
+    el.ovlGs.textContent = gs !== null ? Math.round(gs) : '---';
+    el.ovlTas.textContent = isNum(ac.trueAirSpeedKt) ? Math.round(ac.trueAirSpeedKt) : '---';
+
+    // Windpfeil zeigt in die Richtung, in die der Wind weht (Airbus-Konvention)
+    if (isNum(ac.windDirDeg) && isNum(ac.windSpeedKt)) {
+      el.ovlWind.textContent = pad(Math.round(ac.windDirDeg), 3) + '°/' + Math.round(ac.windSpeedKt);
+      el.ovlWindArrow.style.transform = 'rotate(' + ((ac.windDirDeg + 180) % 360) + 'deg)';
+      el.ovlWindArrow.style.visibility = 'visible';
+    } else {
+      el.ovlWind.textContent = '---°/--';
+      el.ovlWindArrow.style.visibility = 'hidden';
+    }
+
+    el.ovlTo.textContent = CONFIG.destination.iata;
+    el.ovlBrg.textContent = pad(Math.round(GEO.bearingDeg(ac, CONFIG.destination)), 3) + '°';
+    el.ovlRemain.textContent = Math.round(remainNm) + ' NM';
+    el.ovlEta.textContent = etaDate ? timeIn(CONFIG.destination.tz, etaDate) : '--:--';
 
     /* Fortschritt */
     el.progFlown.textContent = Math.round(flownNm) + ' NM';
@@ -360,7 +406,10 @@
             altitudeFt: a.alt_baro === 'ground' ? 0 : Number(a.alt_baro),
             groundSpeedKt: Number(a.gs), trackDeg: Number(a.track),
             verticalRateFpm: Number(a.baro_rate), mach: Number(a.mach),
-            trueAirSpeedKt: Number(a.tas), squawk: a.squawk || null,
+            trueAirSpeedKt: Number(a.tas), indicatedAirSpeedKt: Number(a.ias),
+            geoAltitudeFt: Number(a.alt_geom),
+            windDirDeg: Number(a.wd), windSpeedKt: Number(a.ws), outsideAirTempC: Number(a.oat),
+            squawk: a.squawk || null,
             onGround: a.alt_baro === 'ground',
             positionAgeSec: Number(a.seen_pos), observedAt: Date.now()
           },

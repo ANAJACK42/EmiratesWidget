@@ -102,9 +102,13 @@ html, body {
 .map-overlay-tr { top: 6px; right: 6px; text-align: right; }
 .map-overlay-bl { bottom: 18px; left: 6px; }
 .map-overlay-br { bottom: 18px; right: 6px; text-align: right; }
-.ovl-label { opacity: 0.6; font-size: 9px; }
-.ovl-value { font-weight: 700; font-size: 12px; }
+.ovl-row { display: flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+.map-overlay-tr .ovl-row { justify-content: flex-end; }
+.ovl-label { opacity: 0.75; font-size: 9px; letter-spacing: 0.12em; }
+.ovl-value { font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; }
 .ovl-value small { font-size: 9px; font-weight: 400; opacity: 0.7; }
+.ovl-dim { opacity: 0.75; font-size: 10px; font-weight: 400; }
+.ovl-arrow { display: inline-block; font-size: 13px; line-height: 1; }
 
 /* Flugzeugsymbol */
 .acft-icon { will-change: transform; }
@@ -210,9 +214,9 @@ html, body {
   border-bottom: 1px solid rgba(0, 255, 150, 0.22);
   background: linear-gradient(180deg, rgba(0, 255, 150, 0.08), transparent);
 }
-[data-theme="ecam"] .ident-flight { color: #00ff9c; text-shadow: 0 0 12px rgba(0, 255, 156, 0.55); font-size: 14px; }
-[data-theme="ecam"] .ident-callsign { color: #7de8ff; }
-[data-theme="ecam"] .ident-route { color: #ffb000; }
+[data-theme="ecam"] .ident-flight { color: #00ff66; text-shadow: 0 0 12px rgba(0, 255, 102, 0.5); font-size: 14px; }
+[data-theme="ecam"] .ident-callsign { color: #ffffff; opacity: 0.8; }
+[data-theme="ecam"] .ident-route { color: #00d0ff; }
 [data-theme="ecam"] .tb-btn {
   background: rgba(0, 255, 150, 0.07);
   border: 1px solid rgba(0, 255, 150, 0.3);
@@ -222,20 +226,29 @@ html, body {
 [data-theme="ecam"] .tb-btn:hover { background: rgba(0, 255, 150, 0.2); color: #ccffe6; }
 [data-theme="ecam"] .tb-btn.active { background: rgba(255, 176, 0, 0.22); border-color: #ffb000; color: #ffd980; }
 [data-theme="ecam"] .tb-btn-close:hover { background: rgba(255, 60, 60, 0.28); border-color: #ff5555; color: #ffdada; }
-[data-theme="ecam"] .statusbar { color: #7de8ff; border-bottom: 1px solid rgba(0, 255, 150, 0.12); }
-[data-theme="ecam"] .status-text { color: #ffb000; }
+[data-theme="ecam"] .statusbar { color: #00d0ff; border-bottom: 1px solid rgba(0, 255, 150, 0.12); }
+[data-theme="ecam"] .status-text { color: #00ff66; }
+[data-theme="ecam"] .status-text.caution { color: #ffa000; }
 [data-theme="ecam"] .map-panel { border: 1px solid rgba(0, 255, 150, 0.22); border-radius: 3px; }
+/* Farblogik wie im Cockpit: Weiss = Beschriftung, Gruen = aktiver Wert,
+   Cyan = Skalen und Bezuege, Magenta = Ziel, Amber = Warnung. */
 [data-theme="ecam"] .map-overlay {
-  background: rgba(2, 12, 8, 0.72);
-  border: 1px solid rgba(0, 255, 150, 0.28);
-  color: #9dffcd;
+  background: rgba(0, 0, 0, 0.62);
+  border: none;
+  color: #ffffff;
 }
-[data-theme="ecam"] .map-overlay-tr .ovl-value, [data-theme="ecam"] .map-overlay-br .ovl-value { color: #00ff9c; }
+[data-theme="ecam"] .ovl-label { color: #ffffff; opacity: 0.9; }
+[data-theme="ecam"] .ovl-value { color: #00ff66; }
+[data-theme="ecam"] .ovl-scale { color: #00d0ff; }
+[data-theme="ecam"] .ovl-target { color: #ff2fff; }
+[data-theme="ecam"] .ovl-dim { color: #00d0ff; opacity: 0.8; }
+[data-theme="ecam"] .ovl-arrow { color: #00ff66; }
 [data-theme="ecam"] .progress-track { background: rgba(0, 255, 150, 0.12); border: 1px solid rgba(0, 255, 150, 0.25); }
-[data-theme="ecam"] .progress-fill { background: linear-gradient(90deg, #00b96a, #00ff9c); box-shadow: 0 0 12px rgba(0, 255, 156, 0.6); }
-[data-theme="ecam"] .progress-marker { color: #ffb000; text-shadow: 0 0 10px rgba(255, 176, 0, 0.8); }
-[data-theme="ecam"] .pe-code { color: #7de8ff; }
-[data-theme="ecam"] .pe-pct { color: #00ff9c; }
+[data-theme="ecam"] .progress-fill { background: linear-gradient(90deg, #00b94f, #00ff66); box-shadow: 0 0 12px rgba(0, 255, 102, 0.55); }
+[data-theme="ecam"] .progress-marker { color: #ffffff; text-shadow: 0 0 10px rgba(255, 255, 255, 0.8); }
+[data-theme="ecam"] .pe-code:first-child { color: #ffffff; }
+[data-theme="ecam"] .progress-ends .pe-code:last-child { color: #ff2fff; }
+[data-theme="ecam"] .pe-pct { color: #00ff66; }
 [data-theme="ecam"] .cell {
   background: linear-gradient(180deg, rgba(0, 255, 150, 0.05), rgba(0, 0, 0, 0.2));
   border: 1px solid rgba(0, 255, 150, 0.22);
@@ -246,13 +259,14 @@ html, body {
   content: ""; position: absolute; top: 0; right: 0; width: 8px; height: 8px;
   border-top: 1px solid rgba(0, 255, 150, 0.75); border-right: 1px solid rgba(0, 255, 150, 0.75);
 }
-[data-theme="ecam"] .cell-label { color: #7de8ff; }
-[data-theme="ecam"] .cell-value { color: #00ff9c; text-shadow: 0 0 14px rgba(0, 255, 156, 0.45); }
-[data-theme="ecam"] .cell-unit { color: #b8f5d0; }
-[data-theme="ecam"] .cell-sub { color: #ffb000; }
-[data-theme="ecam"] .footer { color: #7de8ff; border-top: 1px solid rgba(0, 255, 150, 0.15); }
-[data-theme="ecam"] .apt-label { color: #ffb000; text-shadow: 0 0 8px rgba(0,0,0,0.9); }
-[data-theme="ecam"] .apt-dot { color: #ffb000; }
+[data-theme="ecam"] .cell-label { color: #ffffff; opacity: 0.85; }
+[data-theme="ecam"] .cell-value { color: #00ff66; text-shadow: 0 0 14px rgba(0, 255, 102, 0.4); }
+[data-theme="ecam"] .cell-unit { color: #00d0ff; }
+[data-theme="ecam"] .cell-sub { color: #00d0ff; }
+[data-theme="ecam"] .footer { color: #00d0ff; border-top: 1px solid rgba(0, 255, 150, 0.15); }
+[data-theme="ecam"] .apt-origin { color: #ffffff; }
+[data-theme="ecam"] .apt-dest { color: #ff2fff; }
+[data-theme="ecam"] .apt-label { text-shadow: 0 0 8px rgba(0, 0, 0, 0.95); }
 [data-theme="ecam"] .warn { color: #ff5555 !important; text-shadow: 0 0 12px rgba(255, 85, 85, 0.6); }
 
 /* =====================================================================
@@ -337,8 +351,8 @@ html, body {
 [data-theme="glass"] .cell-unit { color: rgba(255, 255, 255, 0.6); }
 [data-theme="glass"] .cell-sub { color: rgba(160, 210, 255, 0.95); }
 [data-theme="glass"] .footer { padding: 0 16px 12px; color: rgba(255, 255, 255, 0.45); }
-[data-theme="glass"] .apt-label { color: #fff; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
-[data-theme="glass"] .apt-dot { color: rgba(255, 255, 255, 0.95); }
+[data-theme="glass"] .apt-marker { color: rgba(255, 255, 255, 0.95); }
+[data-theme="glass"] .apt-label { text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
 [data-theme="glass"] .warn { color: #ff9aa2 !important; }
 
 /* Browserbetrieb (GitHub Pages): fuellt das ganze Fenster */

@@ -10,7 +10,7 @@
     <title>EK050 · MUC → DXB · Live</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <link rel="stylesheet" href="renderer/styles.css" />
+    <link rel="stylesheet" href="renderer/styles.css?v=2" />
   </head>
   <body>
     <div id="shell" class="shell">
@@ -43,21 +43,31 @@
 
       <section class="map-panel">
         <div id="map"></div>
+        <!-- Navigationsdisplay-Blöcke nach Airbus-Vorbild -->
         <div class="map-overlay map-overlay-tl">
-          <div class="ovl-label">POS</div>
-          <div class="ovl-value" id="ovlPos">— —</div>
+          <div class="ovl-row">
+            <span class="ovl-label">GS</span><span class="ovl-value" id="ovlGs">---</span>
+            <span class="ovl-label">TAS</span><span class="ovl-value" id="ovlTas">---</span>
+          </div>
+          <div class="ovl-row">
+            <span class="ovl-arrow" id="ovlWindArrow">↓</span>
+            <span class="ovl-value ovl-scale" id="ovlWind">---°/--</span>
+          </div>
+          <div class="ovl-row ovl-dim" id="ovlPos">— —</div>
         </div>
         <div class="map-overlay map-overlay-tr">
-          <div class="ovl-label">GS</div>
-          <div class="ovl-value" id="ovlGs">— <small>kt</small></div>
+          <div class="ovl-row"><span class="ovl-label">TO</span><span class="ovl-value ovl-target" id="ovlTo">DXB</span></div>
+          <div class="ovl-row">
+            <span class="ovl-value ovl-scale" id="ovlBrg">---°</span>
+            <span class="ovl-value" id="ovlRemain">--- NM</span>
+          </div>
+          <div class="ovl-row"><span class="ovl-value ovl-target" id="ovlEta">--:--</span></div>
         </div>
         <div class="map-overlay map-overlay-bl">
-          <div class="ovl-label">DIST REM</div>
-          <div class="ovl-value" id="ovlRemain">— <small>NM</small></div>
+          <span class="ovl-label">RANGE</span> <span class="ovl-value ovl-scale" id="ovlRange">--- NM</span>
         </div>
         <div class="map-overlay map-overlay-br">
-          <div class="ovl-label">ETA DXB</div>
-          <div class="ovl-value" id="ovlEta">—</div>
+          <span class="ovl-value ovl-scale" id="ovlMode">PLAN · NORTH UP</span>
         </div>
       </section>
 
@@ -125,11 +135,11 @@
       </footer>
     </div>
 
-    <script src="config.js"></script>
-    <script src="renderer/geo.js"></script>
-    <script src="renderer/world.js"></script>
+    <script src="config.js?v=2"></script>
+    <script src="renderer/geo.js?v=2"></script>
+    <script src="renderer/world.js?v=2"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="renderer/app.js"></script>
+    <script src="renderer/app.js?v=2"></script>
   </body>
 </html>

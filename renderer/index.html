@@ -42,21 +42,31 @@
       <!-- Karte -->
       <section class="map-panel">
         <div id="map"></div>
+        <!-- Navigationsdisplay-Blöcke nach Airbus-Vorbild -->
         <div class="map-overlay map-overlay-tl">
-          <div class="ovl-label">POS</div>
-          <div class="ovl-value" id="ovlPos">— —</div>
+          <div class="ovl-row">
+            <span class="ovl-label">GS</span><span class="ovl-value" id="ovlGs">---</span>
+            <span class="ovl-label">TAS</span><span class="ovl-value" id="ovlTas">---</span>
+          </div>
+          <div class="ovl-row">
+            <span class="ovl-arrow" id="ovlWindArrow">↓</span>
+            <span class="ovl-value ovl-scale" id="ovlWind">---°/--</span>
+          </div>
+          <div class="ovl-row ovl-dim" id="ovlPos">— —</div>
         </div>
         <div class="map-overlay map-overlay-tr">
-          <div class="ovl-label">GS</div>
-          <div class="ovl-value" id="ovlGs">— <small>kt</small></div>
+          <div class="ovl-row"><span class="ovl-label">TO</span><span class="ovl-value ovl-target" id="ovlTo">DXB</span></div>
+          <div class="ovl-row">
+            <span class="ovl-value ovl-scale" id="ovlBrg">---°</span>
+            <span class="ovl-value" id="ovlRemain">--- NM</span>
+          </div>
+          <div class="ovl-row"><span class="ovl-value ovl-target" id="ovlEta">--:--</span></div>
         </div>
         <div class="map-overlay map-overlay-bl">
-          <div class="ovl-label">DIST REM</div>
-          <div class="ovl-value" id="ovlRemain">— <small>NM</small></div>
+          <span class="ovl-label">RANGE</span> <span class="ovl-value ovl-scale" id="ovlRange">--- NM</span>
         </div>
         <div class="map-overlay map-overlay-br">
-          <div class="ovl-label">ETA DXB</div>
-          <div class="ovl-value" id="ovlEta">—</div>
+          <span class="ovl-value ovl-scale" id="ovlMode">PLAN · NORTH UP</span>
         </div>
       </section>
 

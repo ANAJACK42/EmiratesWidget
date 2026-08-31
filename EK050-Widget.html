@@ -115,9 +115,13 @@ html, body {
 .map-overlay-tr { top: 6px; right: 6px; text-align: right; }
 .map-overlay-bl { bottom: 18px; left: 6px; }
 .map-overlay-br { bottom: 18px; right: 6px; text-align: right; }
-.ovl-label { opacity: 0.6; font-size: 9px; }
-.ovl-value { font-weight: 700; font-size: 12px; }
+.ovl-row { display: flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+.map-overlay-tr .ovl-row { justify-content: flex-end; }
+.ovl-label { opacity: 0.75; font-size: 9px; letter-spacing: 0.12em; }
+.ovl-value { font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; }
 .ovl-value small { font-size: 9px; font-weight: 400; opacity: 0.7; }
+.ovl-dim { opacity: 0.75; font-size: 10px; font-weight: 400; }
+.ovl-arrow { display: inline-block; font-size: 13px; line-height: 1; }
 
 /* Flugzeugsymbol */
 .acft-icon { will-change: transform; }
@@ -223,9 +227,9 @@ html, body {
   border-bottom: 1px solid rgba(0, 255, 150, 0.22);
   background: linear-gradient(180deg, rgba(0, 255, 150, 0.08), transparent);
 }
-[data-theme="ecam"] .ident-flight { color: #00ff9c; text-shadow: 0 0 12px rgba(0, 255, 156, 0.55); font-size: 14px; }
-[data-theme="ecam"] .ident-callsign { color: #7de8ff; }
-[data-theme="ecam"] .ident-route { color: #ffb000; }
+[data-theme="ecam"] .ident-flight { color: #00ff66; text-shadow: 0 0 12px rgba(0, 255, 102, 0.5); font-size: 14px; }
+[data-theme="ecam"] .ident-callsign { color: #ffffff; opacity: 0.8; }
+[data-theme="ecam"] .ident-route { color: #00d0ff; }
 [data-theme="ecam"] .tb-btn {
   background: rgba(0, 255, 150, 0.07);
   border: 1px solid rgba(0, 255, 150, 0.3);
@@ -235,20 +239,29 @@ html, body {
 [data-theme="ecam"] .tb-btn:hover { background: rgba(0, 255, 150, 0.2); color: #ccffe6; }
 [data-theme="ecam"] .tb-btn.active { background: rgba(255, 176, 0, 0.22); border-color: #ffb000; color: #ffd980; }
 [data-theme="ecam"] .tb-btn-close:hover { background: rgba(255, 60, 60, 0.28); border-color: #ff5555; color: #ffdada; }
-[data-theme="ecam"] .statusbar { color: #7de8ff; border-bottom: 1px solid rgba(0, 255, 150, 0.12); }
-[data-theme="ecam"] .status-text { color: #ffb000; }
+[data-theme="ecam"] .statusbar { color: #00d0ff; border-bottom: 1px solid rgba(0, 255, 150, 0.12); }
+[data-theme="ecam"] .status-text { color: #00ff66; }
+[data-theme="ecam"] .status-text.caution { color: #ffa000; }
 [data-theme="ecam"] .map-panel { border: 1px solid rgba(0, 255, 150, 0.22); border-radius: 3px; }
+/* Farblogik wie im Cockpit: Weiss = Beschriftung, Gruen = aktiver Wert,
+   Cyan = Skalen und Bezuege, Magenta = Ziel, Amber = Warnung. */
 [data-theme="ecam"] .map-overlay {
-  background: rgba(2, 12, 8, 0.72);
-  border: 1px solid rgba(0, 255, 150, 0.28);
-  color: #9dffcd;
+  background: rgba(0, 0, 0, 0.62);
+  border: none;
+  color: #ffffff;
 }
-[data-theme="ecam"] .map-overlay-tr .ovl-value, [data-theme="ecam"] .map-overlay-br .ovl-value { color: #00ff9c; }
+[data-theme="ecam"] .ovl-label { color: #ffffff; opacity: 0.9; }
+[data-theme="ecam"] .ovl-value { color: #00ff66; }
+[data-theme="ecam"] .ovl-scale { color: #00d0ff; }
+[data-theme="ecam"] .ovl-target { color: #ff2fff; }
+[data-theme="ecam"] .ovl-dim { color: #00d0ff; opacity: 0.8; }
+[data-theme="ecam"] .ovl-arrow { color: #00ff66; }
 [data-theme="ecam"] .progress-track { background: rgba(0, 255, 150, 0.12); border: 1px solid rgba(0, 255, 150, 0.25); }
-[data-theme="ecam"] .progress-fill { background: linear-gradient(90deg, #00b96a, #00ff9c); box-shadow: 0 0 12px rgba(0, 255, 156, 0.6); }
-[data-theme="ecam"] .progress-marker { color: #ffb000; text-shadow: 0 0 10px rgba(255, 176, 0, 0.8); }
-[data-theme="ecam"] .pe-code { color: #7de8ff; }
-[data-theme="ecam"] .pe-pct { color: #00ff9c; }
+[data-theme="ecam"] .progress-fill { background: linear-gradient(90deg, #00b94f, #00ff66); box-shadow: 0 0 12px rgba(0, 255, 102, 0.55); }
+[data-theme="ecam"] .progress-marker { color: #ffffff; text-shadow: 0 0 10px rgba(255, 255, 255, 0.8); }
+[data-theme="ecam"] .pe-code:first-child { color: #ffffff; }
+[data-theme="ecam"] .progress-ends .pe-code:last-child { color: #ff2fff; }
+[data-theme="ecam"] .pe-pct { color: #00ff66; }
 [data-theme="ecam"] .cell {
   background: linear-gradient(180deg, rgba(0, 255, 150, 0.05), rgba(0, 0, 0, 0.2));
   border: 1px solid rgba(0, 255, 150, 0.22);
@@ -259,13 +272,14 @@ html, body {
   content: ""; position: absolute; top: 0; right: 0; width: 8px; height: 8px;
   border-top: 1px solid rgba(0, 255, 150, 0.75); border-right: 1px solid rgba(0, 255, 150, 0.75);
 }
-[data-theme="ecam"] .cell-label { color: #7de8ff; }
-[data-theme="ecam"] .cell-value { color: #00ff9c; text-shadow: 0 0 14px rgba(0, 255, 156, 0.45); }
-[data-theme="ecam"] .cell-unit { color: #b8f5d0; }
-[data-theme="ecam"] .cell-sub { color: #ffb000; }
-[data-theme="ecam"] .footer { color: #7de8ff; border-top: 1px solid rgba(0, 255, 150, 0.15); }
-[data-theme="ecam"] .apt-label { color: #ffb000; text-shadow: 0 0 8px rgba(0,0,0,0.9); }
-[data-theme="ecam"] .apt-dot { color: #ffb000; }
+[data-theme="ecam"] .cell-label { color: #ffffff; opacity: 0.85; }
+[data-theme="ecam"] .cell-value { color: #00ff66; text-shadow: 0 0 14px rgba(0, 255, 102, 0.4); }
+[data-theme="ecam"] .cell-unit { color: #00d0ff; }
+[data-theme="ecam"] .cell-sub { color: #00d0ff; }
+[data-theme="ecam"] .footer { color: #00d0ff; border-top: 1px solid rgba(0, 255, 150, 0.15); }
+[data-theme="ecam"] .apt-origin { color: #ffffff; }
+[data-theme="ecam"] .apt-dest { color: #ff2fff; }
+[data-theme="ecam"] .apt-label { text-shadow: 0 0 8px rgba(0, 0, 0, 0.95); }
 [data-theme="ecam"] .warn { color: #ff5555 !important; text-shadow: 0 0 12px rgba(255, 85, 85, 0.6); }
 
 /* =====================================================================
@@ -350,8 +364,8 @@ html, body {
 [data-theme="glass"] .cell-unit { color: rgba(255, 255, 255, 0.6); }
 [data-theme="glass"] .cell-sub { color: rgba(160, 210, 255, 0.95); }
 [data-theme="glass"] .footer { padding: 0 16px 12px; color: rgba(255, 255, 255, 0.45); }
-[data-theme="glass"] .apt-label { color: #fff; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
-[data-theme="glass"] .apt-dot { color: rgba(255, 255, 255, 0.95); }
+[data-theme="glass"] .apt-marker { color: rgba(255, 255, 255, 0.95); }
+[data-theme="glass"] .apt-label { text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
 [data-theme="glass"] .warn { color: #ff9aa2 !important; }
 
 /* Browserbetrieb (GitHub Pages): fuellt das ganze Fenster */
@@ -400,21 +414,31 @@ html, body {
 
       <section class="map-panel">
         <div id="map"></div>
+        <!-- Navigationsdisplay-Blöcke nach Airbus-Vorbild -->
         <div class="map-overlay map-overlay-tl">
-          <div class="ovl-label">POS</div>
-          <div class="ovl-value" id="ovlPos">— —</div>
+          <div class="ovl-row">
+            <span class="ovl-label">GS</span><span class="ovl-value" id="ovlGs">---</span>
+            <span class="ovl-label">TAS</span><span class="ovl-value" id="ovlTas">---</span>
+          </div>
+          <div class="ovl-row">
+            <span class="ovl-arrow" id="ovlWindArrow">↓</span>
+            <span class="ovl-value ovl-scale" id="ovlWind">---°/--</span>
+          </div>
+          <div class="ovl-row ovl-dim" id="ovlPos">— —</div>
         </div>
         <div class="map-overlay map-overlay-tr">
-          <div class="ovl-label">GS</div>
-          <div class="ovl-value" id="ovlGs">— <small>kt</small></div>
+          <div class="ovl-row"><span class="ovl-label">TO</span><span class="ovl-value ovl-target" id="ovlTo">DXB</span></div>
+          <div class="ovl-row">
+            <span class="ovl-value ovl-scale" id="ovlBrg">---°</span>
+            <span class="ovl-value" id="ovlRemain">--- NM</span>
+          </div>
+          <div class="ovl-row"><span class="ovl-value ovl-target" id="ovlEta">--:--</span></div>
         </div>
         <div class="map-overlay map-overlay-bl">
-          <div class="ovl-label">DIST REM</div>
-          <div class="ovl-value" id="ovlRemain">— <small>NM</small></div>
+          <span class="ovl-label">RANGE</span> <span class="ovl-value ovl-scale" id="ovlRange">--- NM</span>
         </div>
         <div class="map-overlay map-overlay-br">
-          <div class="ovl-label">ETA DXB</div>
-          <div class="ovl-value" id="ovlEta">—</div>
+          <span class="ovl-value ovl-scale" id="ovlMode">PLAN · NORTH UP</span>
         </div>
       </section>
 
@@ -680,7 +704,8 @@ html, body {
 
   var el = {};
   ['identFlight','identCallsign','identOrigin','identDest','btnTheme','btnRefresh','btnPin','btnMin','btnClose',
-   'statusLed','statusText','statusSource','statusNext','ovlPos','ovlGs','ovlRemain','ovlEta',
+   'statusLed','statusText','statusSource','statusNext','ovlPos','ovlGs','ovlTas','ovlWind',
+   'ovlWindArrow','ovlTo','ovlBrg','ovlRemain','ovlEta','ovlRange','ovlMode',
    'progOrigin','progDest','progFlown','progRemaining','progPct','progFill','progMarker',
    'valGs','subGs','valAlt','subAlt','valTrk','subTrk','valVs','subVs','valPos','subPos',
    'valMach','subMach','valEta','subEta','valAcft','subAcft','footerLeft','footerRight','shell']
@@ -754,13 +779,13 @@ html, body {
     ecam: {
       background: '#04100c',
       land: 'rgba(0, 255, 150, 0.07)', coast: '#00c878', border: 'rgba(0, 255, 150, 0.3)',
-      grid: 'rgba(0, 255, 150, 0.12)',
-      plan: '#1f6f52', flown: '#00ff9c', remaining: '#ffb000', acft: '#00ff9c'
+      grid: 'rgba(0, 255, 150, 0.12)', ring: 'rgba(0, 208, 255, 0.38)',
+      plan: 'rgba(255, 255, 255, 0.28)', flown: '#00ff66', remaining: '#00ff66', acft: '#ffffff'
     },
     glass: {
       background: '#141b2b',
       land: 'rgba(255, 255, 255, 0.14)', coast: 'rgba(255, 255, 255, 0.5)', border: 'rgba(255, 255, 255, 0.22)',
-      grid: 'rgba(255, 255, 255, 0.09)',
+      grid: 'rgba(255, 255, 255, 0.09)', ring: 'rgba(255, 255, 255, 0.3)',
       plan: 'rgba(255,255,255,0.35)', flown: '#7ec8ff', remaining: 'rgba(190,140,255,0.9)', acft: '#ffffff'
     }
   };
@@ -782,12 +807,12 @@ html, body {
     return lines;
   }
 
-  function airportMarker(apt, label) {
+  function airportMarker(apt, label, kind) {
     return L.marker([apt.lat, apt.lon], {
       interactive: false,
       keyboard: false,
       icon: L.divIcon({
-        className: 'apt-marker',
+        className: 'apt-marker apt-' + kind,
         html: '<div class="apt-dot"></div><div class="apt-label">' + label + '</div>',
         iconSize: [10, 10],
         iconAnchor: [5, 5]
@@ -834,10 +859,18 @@ html, body {
     }
 
     layers.plan = L.polyline([], { color: COLORS.ecam.plan, weight: 1, opacity: 0.9, dashArray: '2 6' }).addTo(map);
-    layers.remaining = L.polyline([], { color: COLORS.ecam.remaining, weight: 2, opacity: 0.9, dashArray: '8 6' }).addTo(map);
+    layers.remaining = L.polyline([], { color: COLORS.ecam.remaining, weight: 1.6, opacity: 0.85, dashArray: '10 8' }).addTo(map);
     layers.flown = L.polyline([], { color: COLORS.ecam.flown, weight: 2.5, opacity: 1 }).addTo(map);
-    layers.origin = airportMarker(CONFIG.origin, CONFIG.origin.iata).addTo(map);
-    layers.destination = airportMarker(CONFIG.destination, CONFIG.destination.iata).addTo(map);
+    layers.origin = airportMarker(CONFIG.origin, CONFIG.origin.iata, 'origin').addTo(map);
+    layers.destination = airportMarker(CONFIG.destination, CONFIG.destination.iata, 'dest').addTo(map);
+    // Entfernungsringe (halbe und volle Reichweite) um das Flugzeug
+    layers.rangeOuter = L.circle([CONFIG.origin.lat, CONFIG.origin.lon], {
+      radius: 0, fill: false, color: COLORS.ecam.ring, weight: 1, dashArray: '5 7', interactive: false
+    }).addTo(map);
+    layers.rangeInner = L.circle([CONFIG.origin.lat, CONFIG.origin.lon], {
+      radius: 0, fill: false, color: COLORS.ecam.ring, weight: 1, dashArray: '5 7', interactive: false
+    }).addTo(map);
+
     layers.aircraft = L.marker([CONFIG.origin.lat, CONFIG.origin.lon], {
       icon: aircraftIcon(0), interactive: false, keyboard: false, zIndexOffset: 1000
     }).addTo(map);
@@ -856,6 +889,8 @@ html, body {
     if (layers.grid) layers.grid.setStyle({ color: c.grid });
     if (layers.land) layers.land.setStyle({ fillColor: c.land, color: c.coast });
     if (layers.borders) layers.borders.setStyle({ color: c.border });
+    if (layers.rangeOuter) layers.rangeOuter.setStyle({ color: c.ring });
+    if (layers.rangeInner) layers.rangeInner.setStyle({ color: c.ring });
     layers.plan.setStyle({ color: c.plan });
     layers.flown.setStyle({ color: c.flown });
     layers.remaining.setStyle({ color: c.remaining });
@@ -870,6 +905,24 @@ html, body {
     map.fitBounds(L.latLngBounds(pts).pad(0.18), { animate: false });
   }
 
+  /* Auf einem Navigationsdisplay ist die Reichweite eine feste Stufe.
+     Passende Stufe zur aktuellen Kartenausdehnung waehlen und Ringe setzen. */
+  var ND_RANGES = [10, 20, 40, 80, 160, 320, 640];
+
+  function updateRangeRings(ac) {
+    var center = map.getCenter();
+    var north = map.getBounds().getNorth();
+    var spanNm = GEO.distanceNm({ lat: center.lat, lon: center.lng }, { lat: north, lon: center.lng });
+    var range = ND_RANGES[ND_RANGES.length - 1];
+    for (var i = 0; i < ND_RANGES.length; i += 1) {
+      if (ND_RANGES[i] >= spanNm * 0.85) { range = ND_RANGES[i]; break; }
+    }
+    var metersPerNm = 1852;
+    layers.rangeOuter.setLatLng([ac.lat, ac.lon]).setRadius(range * metersPerNm);
+    layers.rangeInner.setLatLng([ac.lat, ac.lon]).setRadius((range / 2) * metersPerNm);
+    el.ovlRange.textContent = range + ' NM';
+  }
+
   function drawFlight(ac) {
     var flown = state.track.map(toLatLng);
     // Vor dem ersten Fix die Grosskreislinie ab Start als "geflogen" annehmen
@@ -880,6 +933,7 @@ html, body {
     layers.aircraft.setLatLng([ac.lat, ac.lon]);
     layers.aircraft.setIcon(aircraftIcon(ac.trackDeg || GEO.bearingDeg(ac, CONFIG.destination)));
     fitRoute();
+    updateRangeRings(ac);
   }
 
   /* ---------- Anzeige ---------- */
@@ -887,6 +941,8 @@ html, body {
   function setStatus(kind, text) {
     el.statusLed.className = 'status-led ' + kind;
     el.statusText.textContent = text;
+    // Airbus-Logik: Amber = Vorsicht, Rot = Warnung
+    el.statusText.classList.toggle('caution', kind === 'stale');
     el.statusText.classList.toggle('warn', kind === 'lost');
   }
 
@@ -923,11 +979,25 @@ html, body {
     }
     el.statusSource.textContent = 'SRC ' + String(ac.source || '—').toUpperCase();
 
-    /* Karten-Overlays */
+    /* Karten-Overlays im Stil eines Navigationsdisplays */
     el.ovlPos.textContent = GEO.formatLat(ac.lat) + ' ' + GEO.formatLon(ac.lon);
-    el.ovlGs.innerHTML = (gs !== null ? Math.round(gs) : '—') + ' <small>kt</small>';
-    el.ovlRemain.innerHTML = Math.round(remainNm) + ' <small>NM</small>';
-    el.ovlEta.textContent = etaDate ? timeIn(CONFIG.destination.tz, etaDate) + ' LT' : '—';
+    el.ovlGs.textContent = gs !== null ? Math.round(gs) : '---';
+    el.ovlTas.textContent = isNum(ac.trueAirSpeedKt) ? Math.round(ac.trueAirSpeedKt) : '---';
+
+    // Windpfeil zeigt in die Richtung, in die der Wind weht (Airbus-Konvention)
+    if (isNum(ac.windDirDeg) && isNum(ac.windSpeedKt)) {
+      el.ovlWind.textContent = pad(Math.round(ac.windDirDeg), 3) + '°/' + Math.round(ac.windSpeedKt);
+      el.ovlWindArrow.style.transform = 'rotate(' + ((ac.windDirDeg + 180) % 360) + 'deg)';
+      el.ovlWindArrow.style.visibility = 'visible';
+    } else {
+      el.ovlWind.textContent = '---°/--';
+      el.ovlWindArrow.style.visibility = 'hidden';
+    }
+
+    el.ovlTo.textContent = CONFIG.destination.iata;
+    el.ovlBrg.textContent = pad(Math.round(GEO.bearingDeg(ac, CONFIG.destination)), 3) + '°';
+    el.ovlRemain.textContent = Math.round(remainNm) + ' NM';
+    el.ovlEta.textContent = etaDate ? timeIn(CONFIG.destination.tz, etaDate) : '--:--';
 
     /* Fortschritt */
     el.progFlown.textContent = Math.round(flownNm) + ' NM';
@@ -1016,7 +1086,10 @@ html, body {
             altitudeFt: a.alt_baro === 'ground' ? 0 : Number(a.alt_baro),
             groundSpeedKt: Number(a.gs), trackDeg: Number(a.track),
             verticalRateFpm: Number(a.baro_rate), mach: Number(a.mach),
-            trueAirSpeedKt: Number(a.tas), squawk: a.squawk || null,
+            trueAirSpeedKt: Number(a.tas), indicatedAirSpeedKt: Number(a.ias),
+            geoAltitudeFt: Number(a.alt_geom),
+            windDirDeg: Number(a.wd), windSpeedKt: Number(a.ws), outsideAirTempC: Number(a.oat),
+            squawk: a.squawk || null,
             onGround: a.alt_baro === 'ground',
             positionAgeSec: Number(a.seen_pos), observedAt: Date.now()
           },
