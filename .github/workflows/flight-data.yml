@@ -1,0 +1,44 @@
+name: Flugdaten holen
+
+# Läuft auf GitHubs Servern, die freien Netzzugang haben. Ergebnis landet als
+# data/flight.json im Repository und wird von GitHub Pages ausgeliefert – das
+# Widget liest die Daten damit von derselben Adresse, ohne CORS-Grenzen.
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # alle 5 Minuten
+  workflow_dispatch:         # und auf Knopfdruck
+
+permissions:
+  contents: write
+
+concurrency:
+  group: flight-data
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/ek050-flight-tracker-widget-ourg9m
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Position abrufen
+        run: node tools/fetch-flight.js
+
+      - name: Ergebnis sichern
+        run: |
+          if [ -n "$(git status --porcelain data/)" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/
+            git commit -m "Flugdaten $(date -u '+%Y-%m-%d %H:%MZ')"
+            git pull --rebase --autostash origin claude/ek050-flight-tracker-widget-ourg9m
+            git push origin HEAD:claude/ek050-flight-tracker-widget-ourg9m
+          else
+            echo "Keine Änderung an den Flugdaten."
+          fi
