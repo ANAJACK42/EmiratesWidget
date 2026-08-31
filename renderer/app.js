@@ -671,6 +671,16 @@
         var ac = json.aircraft;
         ac.source = (ac.source || 'relay') + ' via Actions';
         ac.observedAt = new Date(json.updatedAt).getTime();
+        // Die serverseitig mitgeschriebene Spur ist die tatsächlich geflogene Route
+        try {
+          var trail = await fetchJson('data/track.json?t=' + Date.now(), 8000);
+          if (Array.isArray(trail) && trail.length > 5) {
+            state.track = trail.map(function (p) {
+              return { lat: p.lat, lon: p.lon, t: new Date(p.t).getTime(), alt: p.alt, gs: p.gs };
+            });
+            attempts.push({ label: 'Spur aus dem Repo', status: state.track.length + ' Punkte' });
+          }
+        } catch (err) { /* ohne Spur läuft es auch */ }
         return ac;
       }
       attempts.push({
@@ -765,7 +775,7 @@
     if (result && result.ok && result.aircraft) {
       state.aircraft = result.aircraft;
       state.lastFix = result.aircraft;
-      pushTrackPoint(result.aircraft);
+      if (String(result.aircraft.source || '').indexOf('via Actions') === -1) pushTrackPoint(result.aircraft);
       learnRouteIfArrived(result.aircraft);
       render(result.aircraft, { estimated: false });
       return;

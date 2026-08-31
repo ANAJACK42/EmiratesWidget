@@ -1248,7 +1248,7 @@ html, body {
 })(typeof self !== 'undefined' ? self : this, function () {
   return {
     // Bauversion – steht im DIAG-Fenster, damit erkennbar ist, welcher Stand läuft
-    version: '2026-08-31.9',
+    version: '2026-08-31.12',
 
     /*
      * Flugnummer (IATA) und Funkrufzeichen (ICAO).
@@ -1260,6 +1260,15 @@ html, body {
      */
     flightIata: 'EK050',
     callsign: 'UAE5T',
+    /*
+     * Kennzeichen des Flugzeugs (Emirates A380-861, A6-EEP).
+     * Die Registrierung ist die zuverlässigste Kennung: Sie ändert sich nicht,
+     * während das Rufzeichen je nach Flug wechselt und in den Feeds fehlen kann.
+     */
+    registration: 'A6-EEP',
+    // Flightradar24 sieht die Maschine auch dort, wo Bodenempfänger fehlen
+    // (Satellitenempfang). Die Flug-Kennung stammt aus der FR24-Adresse.
+    fr24FlightId: '41711143',
     // Weitere Schreibweisen, die Feeder liefern oder die an anderen Tagen gelten koennen
     callsignVariants: ['UAE5T', 'UAE50', 'UAE050', 'UAE0050', 'EK50', 'EK050'],
 
@@ -2147,6 +2156,16 @@ html, body {
         var ac = json.aircraft;
         ac.source = (ac.source || 'relay') + ' via Actions';
         ac.observedAt = new Date(json.updatedAt).getTime();
+        // Die serverseitig mitgeschriebene Spur ist die tatsächlich geflogene Route
+        try {
+          var trail = await fetchJson('data/track.json?t=' + Date.now(), 8000);
+          if (Array.isArray(trail) && trail.length > 5) {
+            state.track = trail.map(function (p) {
+              return { lat: p.lat, lon: p.lon, t: new Date(p.t).getTime(), alt: p.alt, gs: p.gs };
+            });
+            attempts.push({ label: 'Spur aus dem Repo', status: state.track.length + ' Punkte' });
+          }
+        } catch (err) { /* ohne Spur läuft es auch */ }
         return ac;
       }
       attempts.push({
@@ -2241,7 +2260,7 @@ html, body {
     if (result && result.ok && result.aircraft) {
       state.aircraft = result.aircraft;
       state.lastFix = result.aircraft;
-      pushTrackPoint(result.aircraft);
+      if (String(result.aircraft.source || '').indexOf('via Actions') === -1) pushTrackPoint(result.aircraft);
       learnRouteIfArrived(result.aircraft);
       render(result.aircraft, { estimated: false });
       return;
