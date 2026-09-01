@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-01T06:14:42.235Z",
+  "updatedAt": "2026-09-01T11:39:20.495Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
@@ -26,7 +26,7 @@
     "windSpeedKt": null,
     "outsideAirTempC": null,
     "onGround": true,
-    "positionAgeSec": 31582,
+    "positionAgeSec": 51060,
     "observedAt": 1788211700000,
     "flightId": "41711143",
     "verticalRateDerived": true
