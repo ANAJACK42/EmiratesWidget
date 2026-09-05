@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-05T09:18:03.342Z",
+  "updatedAt": "2026-09-05T12:45:36.417Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
@@ -7,28 +7,28 @@
   "aircraft": {
     "source": "flightradar24",
     "icao24": "89611c",
-    "callsign": "UAE18V",
+    "callsign": "UAE507",
     "registration": "A6-ECU",
     "aircraftType": "B77W",
-    "lat": 19.090351,
-    "lon": 72.86174,
-    "altitudeFt": 0,
+    "lat": 21.512558,
+    "lon": 65.156517,
+    "altitudeFt": 36000,
     "geoAltitudeFt": null,
-    "groundSpeedKt": 16,
+    "groundSpeedKt": 506,
     "trueAirSpeedKt": null,
     "indicatedAirSpeedKt": null,
     "mach": null,
-    "trackDeg": 90,
-    "headingDeg": 90,
+    "trackDeg": 296,
+    "headingDeg": 296,
     "verticalRateFpm": 0,
     "squawk": null,
     "windDirDeg": null,
     "windSpeedKt": null,
     "outsideAirTempC": null,
-    "onGround": true,
-    "positionAgeSec": 70,
-    "observedAt": 1788599813000,
-    "flightId": "4183d28a",
+    "onGround": false,
+    "positionAgeSec": 519,
+    "observedAt": 1788611817000,
+    "flightId": "41849057",
     "verticalRateDerived": true
   },
   "attempts": [
@@ -38,15 +38,15 @@
     },
     {
       "label": "fr24 Suche",
-      "status": "Flug-Kennung 4183d28a"
+      "status": "Flug-Kennung 41849057"
     },
     {
-      "label": "flightradar24 4183d28a",
-      "status": "OK, 550 Spurpunkte"
+      "label": "flightradar24 41849057",
+      "status": "OK, 193 Spurpunkte"
     },
     {
       "label": "Steig-/Sinkrate",
-      "status": "aus der Spur berechnet: 0 ft/min über 0.5 min"
+      "status": "aus der Spur berechnet: 0 ft/min über 1.2 min"
     }
   ]
 }
