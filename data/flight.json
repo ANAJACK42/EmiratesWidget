@@ -1,34 +1,34 @@
 {
-  "updatedAt": "2026-09-06T12:51:11.081Z",
+  "updatedAt": "2026-09-06T15:49:40.013Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
     "source": "flightradar24",
-    "icao24": "89630e",
-    "callsign": "UAE507",
-    "registration": "A6-ENL",
-    "aircraftType": "B77W",
-    "lat": 23.578125,
-    "lon": 60.110828,
-    "altitudeFt": 36000,
+    "icao24": "896459",
+    "callsign": "UAE5T",
+    "registration": "A6-EUD",
+    "aircraftType": "A388",
+    "lat": 39.137878,
+    "lon": 28.583738,
+    "altitudeFt": 41000,
     "geoAltitudeFt": null,
-    "groundSpeedKt": 505,
+    "groundSpeedKt": 529,
     "trueAirSpeedKt": null,
     "indicatedAirSpeedKt": null,
     "mach": null,
-    "trackDeg": 291,
-    "headingDeg": 291,
+    "trackDeg": 124,
+    "headingDeg": 124,
     "verticalRateFpm": 0,
     "squawk": null,
     "windDirDeg": null,
     "windSpeedKt": null,
     "outsideAirTempC": null,
     "onGround": false,
-    "positionAgeSec": 5,
-    "observedAt": 1788699066000,
-    "flightId": "418832bb",
+    "positionAgeSec": 17,
+    "observedAt": 1788709763000,
+    "flightId": "4188b7cc",
     "verticalRateDerived": true
   },
   "attempts": [
@@ -38,11 +38,11 @@
     },
     {
       "label": "fr24 Suche",
-      "status": "Flug-Kennung 418832bb"
+      "status": "Flug-Kennung 4188b7cc"
     },
     {
-      "label": "flightradar24 418832bb",
-      "status": "OK, 229 Spurpunkte"
+      "label": "flightradar24 4188b7cc",
+      "status": "OK, 352 Spurpunkte"
     },
     {
       "label": "Steig-/Sinkrate",
