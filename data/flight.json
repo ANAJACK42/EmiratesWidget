@@ -1,34 +1,34 @@
 {
-  "updatedAt": "2026-09-06T09:08:05.570Z",
+  "updatedAt": "2026-09-06T12:51:11.081Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
     "source": "flightradar24",
-    "icao24": "600045",
-    "callsign": "EK500",
-    "registration": "EK-500",
-    "aircraftType": "P46T",
-    "lat": 40.920952,
-    "lon": 43.980145,
-    "altitudeFt": 20000,
+    "icao24": "89630e",
+    "callsign": "UAE507",
+    "registration": "A6-ENL",
+    "aircraftType": "B77W",
+    "lat": 23.578125,
+    "lon": 60.110828,
+    "altitudeFt": 36000,
     "geoAltitudeFt": null,
-    "groundSpeedKt": 225,
+    "groundSpeedKt": 505,
     "trueAirSpeedKt": null,
     "indicatedAirSpeedKt": null,
     "mach": null,
-    "trackDeg": 230,
-    "headingDeg": 230,
+    "trackDeg": 291,
+    "headingDeg": 291,
     "verticalRateFpm": 0,
     "squawk": null,
     "windDirDeg": null,
     "windSpeedKt": null,
     "outsideAirTempC": null,
     "onGround": false,
-    "positionAgeSec": 40,
-    "observedAt": 1788685646000,
-    "flightId": "4187d4bc",
+    "positionAgeSec": 5,
+    "observedAt": 1788699066000,
+    "flightId": "418832bb",
     "verticalRateDerived": true
   },
   "attempts": [
@@ -38,15 +38,15 @@
     },
     {
       "label": "fr24 Suche",
-      "status": "Flug-Kennung 4187d4bc"
+      "status": "Flug-Kennung 418832bb"
     },
     {
-      "label": "flightradar24 4187d4bc",
-      "status": "OK, 224 Spurpunkte"
+      "label": "flightradar24 418832bb",
+      "status": "OK, 229 Spurpunkte"
     },
     {
       "label": "Steig-/Sinkrate",
-      "status": "aus der Spur berechnet: 0 ft/min über 0.6 min"
+      "status": "aus der Spur berechnet: 0 ft/min über 0.5 min"
     }
   ]
 }
