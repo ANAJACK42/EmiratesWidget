@@ -1,35 +1,34 @@
 {
-  "updatedAt": "2026-09-07T15:55:23.951Z",
+  "updatedAt": "2026-09-07T19:27:17.845Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
     "source": "flightradar24",
-    "icao24": "8960f9",
-    "callsign": "UAE5T",
-    "registration": "A6-EDX",
+    "icao24": "8963e6",
+    "callsign": "UAE500",
+    "registration": "A6-EOI",
     "aircraftType": "A388",
-    "lat": 40.918392,
-    "lon": 31.161283,
+    "lat": 21.931969,
+    "lon": 62.080383,
     "altitudeFt": 39000,
     "geoAltitudeFt": null,
-    "groundSpeedKt": 533,
+    "groundSpeedKt": 494,
     "trueAirSpeedKt": null,
     "indicatedAirSpeedKt": null,
     "mach": null,
-    "trackDeg": 123,
-    "headingDeg": 123,
-    "verticalRateFpm": 0,
+    "trackDeg": 108,
+    "headingDeg": 108,
+    "verticalRateFpm": null,
     "squawk": null,
     "windDirDeg": null,
     "windSpeedKt": null,
     "outsideAirTempC": null,
     "onGround": false,
-    "positionAgeSec": 22,
-    "observedAt": 1788796502000,
-    "flightId": "418c6a62",
-    "verticalRateDerived": true
+    "positionAgeSec": 517,
+    "observedAt": 1788808721000,
+    "flightId": "418d4b00"
   },
   "attempts": [
     {
@@ -38,15 +37,11 @@
     },
     {
       "label": "fr24 Suche",
-      "status": "Flug-Kennung 418c6a62"
+      "status": "Flug-Kennung 418d4b00"
     },
     {
-      "label": "flightradar24 418c6a62",
-      "status": "OK, 339 Spurpunkte"
-    },
-    {
-      "label": "Steig-/Sinkrate",
-      "status": "aus der Spur berechnet: 0 ft/min über 0.5 min"
+      "label": "flightradar24 418d4b00",
+      "status": "OK, 230 Spurpunkte"
     }
   ]
 }
