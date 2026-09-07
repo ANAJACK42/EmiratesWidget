@@ -1,33 +1,35 @@
 {
-  "updatedAt": "2026-09-06T23:06:37.828Z",
+  "updatedAt": "2026-09-07T00:52:12.234Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
-    "source": "adsb.lol hex",
-    "icao24": "89618f",
-    "callsign": "UAE353",
-    "registration": "A6-EEP",
+    "source": "flightradar24",
+    "icao24": "896473",
+    "callsign": "UAE501",
+    "registration": "A6-EUI",
     "aircraftType": "A388",
-    "lat": 23.926873,
-    "lon": 59.139715,
-    "altitudeFt": 43000,
-    "geoAltitudeFt": 45600,
-    "groundSpeedKt": 476.7,
-    "trueAirSpeedKt": 472,
-    "indicatedAirSpeedKt": 235,
-    "mach": 0.828,
-    "trackDeg": 291.02,
-    "headingDeg": 292.93,
-    "verticalRateFpm": 0,
-    "squawk": "4014",
-    "windDirDeg": 41,
-    "windSpeedKt": 15,
-    "outsideAirTempC": -59,
+    "lat": 22.972366,
+    "lon": 61.741516,
+    "altitudeFt": 36950,
+    "geoAltitudeFt": null,
+    "groundSpeedKt": 495,
+    "trueAirSpeedKt": null,
+    "indicatedAirSpeedKt": null,
+    "mach": null,
+    "trackDeg": 292,
+    "headingDeg": 292,
+    "verticalRateFpm": -1000,
+    "squawk": null,
+    "windDirDeg": null,
+    "windSpeedKt": null,
+    "outsideAirTempC": null,
     "onGround": false,
-    "positionAgeSec": 0.507,
-    "observedAt": 1788735997828
+    "positionAgeSec": 134,
+    "observedAt": 1788742198000,
+    "flightId": "418a50aa",
+    "verticalRateDerived": true
   },
   "attempts": [
     {
@@ -36,19 +38,15 @@
     },
     {
       "label": "fr24 Suche",
-      "status": "Flug-Kennung EK50"
+      "status": "Flug-Kennung 418a50aa"
     },
     {
-      "label": "flightradar24 EK50",
-      "status": "Unexpected token 'A', \"Array\" is not valid JSON"
+      "label": "flightradar24 418a50aa",
+      "status": "OK, 215 Spurpunkte"
     },
     {
-      "label": "adsbdb Hex-Auflösung",
-      "status": "A6-EEP = 89618f"
-    },
-    {
-      "label": "adsb.lol hex 89618f",
-      "status": "OK"
+      "label": "Steig-/Sinkrate",
+      "status": "aus der Spur berechnet: -1000 ft/min über 1.8 min"
     }
   ]
 }
