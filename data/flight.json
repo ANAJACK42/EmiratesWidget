@@ -1,34 +1,34 @@
 {
-  "updatedAt": "2026-09-07T10:22:44.634Z",
+  "updatedAt": "2026-09-07T15:55:23.951Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
     "source": "flightradar24",
-    "icao24": "8966fc",
-    "callsign": "UAE502",
-    "registration": "A6-EXY",
-    "aircraftType": "A359",
-    "lat": 23.027252,
-    "lon": 63.948368,
-    "altitudeFt": 33000,
+    "icao24": "8960f9",
+    "callsign": "UAE5T",
+    "registration": "A6-EDX",
+    "aircraftType": "A388",
+    "lat": 40.918392,
+    "lon": 31.161283,
+    "altitudeFt": 39000,
     "geoAltitudeFt": null,
-    "groundSpeedKt": 514,
+    "groundSpeedKt": 533,
     "trueAirSpeedKt": null,
     "indicatedAirSpeedKt": null,
     "mach": null,
-    "trackDeg": 110,
-    "headingDeg": 110,
+    "trackDeg": 123,
+    "headingDeg": 123,
     "verticalRateFpm": 0,
     "squawk": null,
     "windDirDeg": null,
     "windSpeedKt": null,
     "outsideAirTempC": null,
     "onGround": false,
-    "positionAgeSec": 33,
-    "observedAt": 1788776532000,
-    "flightId": "418b8a79",
+    "positionAgeSec": 22,
+    "observedAt": 1788796502000,
+    "flightId": "418c6a62",
     "verticalRateDerived": true
   },
   "attempts": [
@@ -38,15 +38,15 @@
     },
     {
       "label": "fr24 Suche",
-      "status": "Flug-Kennung 418b8a79"
+      "status": "Flug-Kennung 418c6a62"
     },
     {
-      "label": "flightradar24 418b8a79",
-      "status": "OK, 677 Spurpunkte"
+      "label": "flightradar24 418c6a62",
+      "status": "OK, 339 Spurpunkte"
     },
     {
       "label": "Steig-/Sinkrate",
-      "status": "aus der Spur berechnet: 0 ft/min über 0.6 min"
+      "status": "aus der Spur berechnet: 0 ft/min über 0.5 min"
     }
   ]
 }
