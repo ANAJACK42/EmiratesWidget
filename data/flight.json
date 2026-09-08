@@ -1,35 +1,34 @@
 {
-  "updatedAt": "2026-09-08T09:07:05.062Z",
+  "updatedAt": "2026-09-08T13:31:36.875Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
     "source": "flightradar24",
-    "icao24": "600045",
-    "callsign": "EK500",
-    "registration": "EK-500",
-    "aircraftType": "P46T",
-    "lat": 40.562412,
-    "lon": 33.47546,
-    "altitudeFt": 29475,
+    "icao24": "8960e0",
+    "callsign": "UAE507",
+    "registration": "A6-EBY",
+    "aircraftType": "B77W",
+    "lat": 25.248793,
+    "lon": 55.367104,
+    "altitudeFt": 0,
     "geoAltitudeFt": null,
-    "groundSpeedKt": 225,
+    "groundSpeedKt": 0,
     "trueAirSpeedKt": null,
     "indicatedAirSpeedKt": null,
     "mach": null,
-    "trackDeg": 303,
-    "headingDeg": 303,
-    "verticalRateFpm": -950,
+    "trackDeg": 112,
+    "headingDeg": 112,
+    "verticalRateFpm": null,
     "squawk": null,
     "windDirDeg": null,
     "windSpeedKt": null,
     "outsideAirTempC": null,
-    "onGround": false,
-    "positionAgeSec": 21,
-    "observedAt": 1788858404000,
-    "flightId": "418f240a",
-    "verticalRateDerived": true
+    "onGround": true,
+    "positionAgeSec": 19,
+    "observedAt": 1788874278000,
+    "flightId": "41904a99"
   },
   "attempts": [
     {
@@ -38,15 +37,11 @@
     },
     {
       "label": "fr24 Suche",
-      "status": "Flug-Kennung 418f240a"
+      "status": "Flug-Kennung 41904a99"
     },
     {
-      "label": "flightradar24 418f240a",
-      "status": "OK, 712 Spurpunkte"
-    },
-    {
-      "label": "Steig-/Sinkrate",
-      "status": "aus der Spur berechnet: -950 ft/min über 0.5 min"
+      "label": "flightradar24 41904a99",
+      "status": "OK, 2 Spurpunkte"
     }
   ]
 }
