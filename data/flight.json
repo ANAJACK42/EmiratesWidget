@@ -1,33 +1,33 @@
 {
-  "updatedAt": "2026-09-20T13:40:24.318Z",
+  "updatedAt": "2026-09-20T16:58:09.794Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
-    "source": "adsb.fi hex",
-    "icao24": "89618f",
-    "callsign": "",
-    "registration": "A6-EEP",
+    "source": "adsb.lol",
+    "icao24": "8960f9",
+    "callsign": "UAE5T",
+    "registration": "A6-EDX",
     "aircraftType": "A388",
-    "lat": 25.245918,
-    "lon": 55.37089,
-    "altitudeFt": 0,
+    "lat": 34.160684,
+    "lon": 36.066113,
+    "altitudeFt": 41000,
     "geoAltitudeFt": null,
-    "groundSpeedKt": 4.2,
-    "trueAirSpeedKt": null,
-    "indicatedAirSpeedKt": null,
-    "mach": null,
-    "trackDeg": 264.38,
-    "headingDeg": 264.38,
-    "verticalRateFpm": null,
-    "squawk": null,
-    "windDirDeg": null,
-    "windSpeedKt": null,
-    "outsideAirTempC": null,
-    "onGround": true,
-    "positionAgeSec": 52.783,
-    "observedAt": 1789911624318
+    "groundSpeedKt": 508.7,
+    "trueAirSpeedKt": 480,
+    "indicatedAirSpeedKt": 252,
+    "mach": 0.848,
+    "trackDeg": 114.75,
+    "headingDeg": 114.07,
+    "verticalRateFpm": 0,
+    "squawk": "6407",
+    "windDirDeg": 306,
+    "windSpeedKt": 29,
+    "outsideAirTempC": -62,
+    "onGround": false,
+    "positionAgeSec": 0,
+    "observedAt": 1789923489794
   },
   "attempts": [
     {
@@ -48,6 +48,30 @@
     },
     {
       "label": "adsb.fi hex 89618f",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.one hex 89618f",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "airplanes.live hex 89618f",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "theairtraffic hex 89618f",
+      "status": "fetch failed"
+    },
+    {
+      "label": "adsb.lol reg A6-EEP",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.lol reg kompakt A6-EEP",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.lol UAE5T",
       "status": "OK"
     }
   ]
