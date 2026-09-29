@@ -1,33 +1,33 @@
 {
-  "updatedAt": "2026-09-29T15:24:16.143Z",
+  "updatedAt": "2026-09-29T20:02:49.088Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
-    "source": "adsb.lol",
-    "icao24": "8963ec",
-    "callsign": "UAE5T",
-    "registration": "A6-EOO",
+    "source": "adsb.fi hex",
+    "icao24": "89618f",
+    "callsign": "UAE367",
+    "registration": "A6-EEP",
     "aircraftType": "A388",
-    "lat": 42.521512,
-    "lon": 22.954591,
-    "altitudeFt": 41000,
-    "geoAltitudeFt": 42100,
-    "groundSpeedKt": 488.6,
-    "trueAirSpeedKt": 490,
-    "indicatedAirSpeedKt": 252,
-    "mach": 0.844,
-    "trackDeg": 129.69,
-    "headingDeg": 130.08,
+    "lat": 21.625842,
+    "lon": 91.5242,
+    "altitudeFt": 40000,
+    "geoAltitudeFt": 42425,
+    "groundSpeedKt": 499.9,
+    "trueAirSpeedKt": 492,
+    "indicatedAirSpeedKt": 259,
+    "mach": 0.848,
+    "trackDeg": 292.46,
+    "headingDeg": 292.32,
     "verticalRateFpm": 0,
-    "squawk": "5557",
-    "windDirDeg": 197,
-    "windSpeedKt": 3,
+    "squawk": "2666",
+    "windDirDeg": 121,
+    "windSpeedKt": 8,
     "outsideAirTempC": -51,
     "onGround": false,
-    "positionAgeSec": 0,
-    "observedAt": 1790695456142
+    "positionAgeSec": 0.635,
+    "observedAt": 1790712169087
   },
   "attempts": [
     {
@@ -48,30 +48,6 @@
     },
     {
       "label": "adsb.fi hex 89618f",
-      "status": "antwortet, kein Treffer (0 Einträge)"
-    },
-    {
-      "label": "adsb.one hex 89618f",
-      "status": "HTTP 403"
-    },
-    {
-      "label": "airplanes.live hex 89618f",
-      "status": "HTTP 403"
-    },
-    {
-      "label": "theairtraffic hex 89618f",
-      "status": "fetch failed"
-    },
-    {
-      "label": "adsb.lol reg A6-EEP",
-      "status": "antwortet, kein Treffer (0 Einträge)"
-    },
-    {
-      "label": "adsb.lol reg kompakt A6-EEP",
-      "status": "antwortet, kein Treffer (0 Einträge)"
-    },
-    {
-      "label": "adsb.lol UAE5T",
       "status": "OK"
     }
   ]
