@@ -1,33 +1,33 @@
 {
-  "updatedAt": "2026-10-02T17:55:43.886Z",
+  "updatedAt": "2026-10-02T21:31:09.166Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
-    "source": "adsb.lol hex",
+    "source": "adsb.fi hex",
     "icao24": "89618f",
     "callsign": "UAE363",
     "registration": "A6-EEP",
     "aircraftType": "A388",
-    "lat": 22.878982,
-    "lon": 107.946676,
-    "altitudeFt": 38100,
-    "geoAltitudeFt": 40575,
-    "groundSpeedKt": 492.4,
-    "trueAirSpeedKt": null,
-    "indicatedAirSpeedKt": null,
-    "mach": null,
-    "trackDeg": 313.19,
-    "headingDeg": null,
+    "lat": 23.197769,
+    "lon": 76.124168,
+    "altitudeFt": 40000,
+    "geoAltitudeFt": 42400,
+    "groundSpeedKt": 486.3,
+    "trueAirSpeedKt": 496,
+    "indicatedAirSpeedKt": 261,
+    "mach": 0.856,
+    "trackDeg": 265.75,
+    "headingDeg": 265.37,
     "verticalRateFpm": 0,
-    "squawk": null,
-    "windDirDeg": null,
-    "windSpeedKt": null,
-    "outsideAirTempC": null,
+    "squawk": "3115",
+    "windDirDeg": 247,
+    "windSpeedKt": 10,
+    "outsideAirTempC": -52,
     "onGround": false,
-    "positionAgeSec": 17.384,
-    "observedAt": 1790963743886
+    "positionAgeSec": 0.026,
+    "observedAt": 1790976669166
   },
   "attempts": [
     {
@@ -44,6 +44,10 @@
     },
     {
       "label": "adsb.lol hex 89618f",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.fi hex 89618f",
       "status": "OK"
     }
   ]
