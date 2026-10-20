@@ -1,33 +1,33 @@
 {
-  "updatedAt": "2026-10-20T09:58:56.381Z",
+  "updatedAt": "2026-10-20T14:39:14.641Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
-    "source": "adsb.lol hex",
-    "icao24": "89618f",
-    "callsign": "UAE7AM",
-    "registration": "A6-EEP",
+    "source": "adsb.lol",
+    "icao24": "896189",
+    "callsign": "UAE5T",
+    "registration": "A6-EEJ",
     "aircraftType": "A388",
-    "lat": 44.480012,
-    "lon": 9.788148,
-    "altitudeFt": 40000,
-    "geoAltitudeFt": 40975,
-    "groundSpeedKt": 456.5,
-    "trueAirSpeedKt": 480,
-    "indicatedAirSpeedKt": 260,
-    "mach": 0.852,
-    "trackDeg": 286.81,
-    "headingDeg": 284.11,
+    "lat": 47.68383,
+    "lon": 15.774254,
+    "altitudeFt": 35000,
+    "geoAltitudeFt": 36000,
+    "groundSpeedKt": 504.7,
+    "trueAirSpeedKt": 464,
+    "indicatedAirSpeedKt": 274,
+    "mach": 0.808,
+    "trackDeg": 109.08,
+    "headingDeg": 110.81,
     "verticalRateFpm": 0,
-    "squawk": "0255",
-    "windDirDeg": 242,
-    "windSpeedKt": 32,
-    "outsideAirTempC": -64,
+    "squawk": "6416",
+    "windDirDeg": 270,
+    "windSpeedKt": 43,
+    "outsideAirTempC": -56,
     "onGround": false,
-    "positionAgeSec": 0.007,
-    "observedAt": 1792490336381
+    "positionAgeSec": 0.194,
+    "observedAt": 1792507154641
   },
   "attempts": [
     {
@@ -44,6 +44,34 @@
     },
     {
       "label": "adsb.lol hex 89618f",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.fi hex 89618f",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.one hex 89618f",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "airplanes.live hex 89618f",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "theairtraffic hex 89618f",
+      "status": "fetch failed"
+    },
+    {
+      "label": "adsb.lol reg A6-EEP",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.lol reg kompakt A6-EEP",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.lol UAE5T",
       "status": "OK"
     }
   ]
