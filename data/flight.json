@@ -1,33 +1,33 @@
 {
-  "updatedAt": "2026-11-13T06:40:28.094Z",
+  "updatedAt": "2026-11-13T14:54:16.328Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
-    "source": "adsb.lol hex",
-    "icao24": "89618f",
-    "callsign": "UAE30Y",
-    "registration": "A6-EEP",
+    "source": "adsb.lol",
+    "icao24": "896181",
+    "callsign": "UAE5T",
+    "registration": "A6-EEB",
     "aircraftType": "A388",
-    "lat": 52.476429,
-    "lon": 5.835545,
-    "altitudeFt": 38000,
-    "geoAltitudeFt": 37275,
-    "groundSpeedKt": 435.2,
-    "trueAirSpeedKt": 486,
-    "indicatedAirSpeedKt": 269,
-    "mach": 0.844,
-    "trackDeg": 286.14,
-    "headingDeg": 287.45,
+    "lat": 46.462097,
+    "lon": 15.939018,
+    "altitudeFt": 35000,
+    "geoAltitudeFt": 34900,
+    "groundSpeedKt": 515.7,
+    "trueAirSpeedKt": 498,
+    "indicatedAirSpeedKt": 296,
+    "mach": 0.864,
+    "trackDeg": 125.85,
+    "headingDeg": 131.28,
     "verticalRateFpm": 0,
-    "squawk": "3275",
-    "windDirDeg": 298,
+    "squawk": "2232",
+    "windDirDeg": 239,
     "windSpeedKt": 51,
-    "outsideAirTempC": -55,
+    "outsideAirTempC": -54,
     "onGround": false,
-    "positionAgeSec": 0.001,
-    "observedAt": 1794552028094
+    "positionAgeSec": 0.167,
+    "observedAt": 1794581656328
   },
   "attempts": [
     {
@@ -44,6 +44,34 @@
     },
     {
       "label": "adsb.lol hex 89618f",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.fi hex 89618f",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.one hex 89618f",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "airplanes.live hex 89618f",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "theairtraffic hex 89618f",
+      "status": "fetch failed"
+    },
+    {
+      "label": "adsb.lol reg A6-EEP",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.lol reg kompakt A6-EEP",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.lol UAE5T",
       "status": "OK"
     }
   ]
