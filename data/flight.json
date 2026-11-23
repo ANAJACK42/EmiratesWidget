@@ -1,33 +1,33 @@
 {
-  "updatedAt": "2026-11-23T04:03:25.214Z",
+  "updatedAt": "2026-11-23T14:22:11.236Z",
   "nearbyEmirates": [],
   "flight": "EK050",
   "callsign": "UAE5T",
   "ok": true,
   "aircraft": {
-    "source": "adsb.fi hex",
-    "icao24": "89618f",
-    "callsign": "UAE384",
-    "registration": "A6-EEP",
+    "source": "adsb.lol",
+    "icao24": "8964b3",
+    "callsign": "UAE5T",
+    "registration": "A6-EVE",
     "aircraftType": "A388",
-    "lat": 18.189651,
-    "lon": 91.074747,
-    "altitudeFt": 41000,
-    "geoAltitudeFt": 43425,
-    "groundSpeedKt": 508.2,
-    "trueAirSpeedKt": null,
-    "indicatedAirSpeedKt": null,
-    "mach": null,
-    "trackDeg": 106.22,
-    "headingDeg": null,
-    "verticalRateFpm": 0,
-    "squawk": null,
-    "windDirDeg": null,
-    "windSpeedKt": null,
-    "outsideAirTempC": null,
+    "lat": 46.526596,
+    "lon": 14.233927,
+    "altitudeFt": 35025,
+    "geoAltitudeFt": 34425,
+    "groundSpeedKt": 527.6,
+    "trueAirSpeedKt": 468,
+    "indicatedAirSpeedKt": 280,
+    "mach": 0.82,
+    "trackDeg": 133.77,
+    "headingDeg": 137.65,
+    "verticalRateFpm": 192,
+    "squawk": "6411",
+    "windDirDeg": 286,
+    "windSpeedKt": 68,
+    "outsideAirTempC": -59,
     "onGround": false,
-    "positionAgeSec": 26.434,
-    "observedAt": 1795406605214
+    "positionAgeSec": 0,
+    "observedAt": 1795443731236
   },
   "attempts": [
     {
@@ -48,6 +48,30 @@
     },
     {
       "label": "adsb.fi hex 89618f",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.one hex 89618f",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "airplanes.live hex 89618f",
+      "status": "HTTP 403"
+    },
+    {
+      "label": "theairtraffic hex 89618f",
+      "status": "fetch failed"
+    },
+    {
+      "label": "adsb.lol reg A6-EEP",
+      "status": "fetch failed"
+    },
+    {
+      "label": "adsb.lol reg kompakt A6-EEP",
+      "status": "antwortet, kein Treffer (0 Einträge)"
+    },
+    {
+      "label": "adsb.lol UAE5T",
       "status": "OK"
     }
   ]
